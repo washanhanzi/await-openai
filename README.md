@@ -13,3 +13,5 @@ just some types I need to serialize/deserialize openai api
  - await_openai::entity::create_chat_completion::SystemMessage
 
 3. tag enum variant
+
+4. dedicate completion chunk type

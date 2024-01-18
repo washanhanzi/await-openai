@@ -1,9 +1,33 @@
+use std::str::FromStr;
+
 use serde::{Deserialize, Serialize};
 
 use super::{
     chat_completion_object::{Logprobs, Role},
     create_chat_completion::{FinishReason, ToolCall},
 };
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Chunk {
+    Done,
+    Data(ChunkResponse),
+}
+
+impl FromStr for Chunk {
+    type Err = serde_json::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "[DONE]" => Ok(Chunk::Done),
+            _ => {
+                let response = serde_json::from_str::<ChunkResponse>(s)?;
+                Ok(Chunk::Data(response))
+            }
+        }
+    }
+}
+
+pub struct ChunkResponseDone;
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
 pub struct ChunkResponse {
@@ -125,6 +149,19 @@ mod tests {
             let serialized = serde_json::to_string(&expected).unwrap();
             let actual: ChunkResponse = serde_json::from_str(&serialized).unwrap();
             assert_eq!(actual, expected, "serialize test failed: {}", name);
+
+            //test enum
+            let got: Chunk = json.parse().unwrap();
+            let want = Chunk::Data(expected);
+            assert_eq!(got, want, "enum test failed: {}", name)
         }
+    }
+
+    #[test]
+    fn test_done() {
+        let input = "[DONE]";
+        let want = Chunk::Done;
+        let got: Chunk = input.parse().unwrap();
+        assert_eq!(want, got, "test [DONE]");
     }
 }
