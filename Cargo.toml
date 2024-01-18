@@ -1,0 +1,18 @@
+[package]
+name = "await-openai"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0.195", features = ["derive"] }
+serde_json = "1.0.111"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+async-openai = "0"
+
+[[bench]]
+name = "async-openai"
+harness = false
