@@ -233,7 +233,11 @@ pub struct ImageUrl {
 #[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
 pub struct ImageContentPart {
     pub image_url: ImageUrl,
+    /// The witdth and height of the image in pixels. the field is used for tokens calculation, it won't serilized, or deserialized when it's None.
+    #[serde(skip_serializing)]
+    pub dimensions: Option<(u32, u32)>,
 }
+
 #[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
 pub struct AssistantMessage {
     /// The contents of the assistant message.
@@ -348,6 +352,7 @@ mod tests {
                                 text: "What’s in this image?".to_string()
                             }),
                             ContentPart::Image(ImageContentPart{
+                                dimensions: None,
                                 image_url: ImageUrl{
                                     url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg".to_string(),
                                     detail: None

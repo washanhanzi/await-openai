@@ -1,3 +1,5 @@
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
 
 use super::create_chat_completion::{FinishReason, ToolCall};
@@ -43,6 +45,28 @@ pub enum Role {
     User,
     Assistant,
     Tool,
+}
+
+impl fmt::Display for Role {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Role::System => write!(f, "system"),
+            Role::User => write!(f, "user"),
+            Role::Assistant => write!(f, "assistant"),
+            Role::Tool => write!(f, "tool"),
+        }
+    }
+}
+
+impl Role {
+    pub fn as_str(&self) -> &'static str {
+        match *self {
+            Role::System => "system",
+            Role::User => "user",
+            Role::Assistant => "assistant",
+            Role::Tool => "tool",
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
