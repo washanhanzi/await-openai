@@ -3,3 +3,5 @@ members = ["await-openai"]
 # Only check / build main crates by default (check all with `--workspace`)
 default-members = ["await-openai"]
 resolver = "2"
+homepage = "https://github.com/washanhanzi/await-openai"
+repository = "https://github.com/washanhanzi/await-openai"

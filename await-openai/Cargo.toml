@@ -1,13 +1,19 @@
 [package]
 name = "await-openai"
-version = "0.1.0"
+description = "Some utils for openai"
+version = "0.1.1"
 edition = "2021"
+readme = "README.md"
+keywords = ["openai"]
+license-file = "LICENSE"
+homepage = "https://github.com/washanhanzi/await-openai"
+repository = "https://github.com/washanhanzi/await-openai"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { version = "1.0.195", features = ["derive"] }
-serde_json = "1.0.111"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 tiktoken-rs = { version = "0", optional = true }
 anyhow = { version = "1", optional = true }
 
