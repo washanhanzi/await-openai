@@ -1,5 +1,3 @@
-use std::ops::Div;
-
 use crate::entity::create_chat_completion::{Content, ContentPart, ImageUrlDetail, Message};
 use anyhow::{anyhow, Result};
 use tiktoken_rs::{
@@ -45,8 +43,18 @@ pub fn get_prompt_tokens(model: &str, messages: &[Message]) -> Result<i32> {
                     }
                     Content::Array(array) => {
                         for part in array {
-                            if let ContentPart::Text(t) = part {
-                                num_tokens += bpe.encode_with_special_tokens(&t.text).len() as i32;
+                            match part {
+                                ContentPart::Text(t) => {
+                                    num_tokens +=
+                                        bpe.encode_with_special_tokens(&t.text).len() as i32;
+                                }
+                                ContentPart::Image(image) => {
+                                    if let Some((w, h)) = image.dimensions {
+                                        num_tokens +=
+                                            get_image_tokens((w, h), &image.image_url.detail)
+                                                as i32;
+                                    }
+                                }
                             }
                         }
                     }
@@ -70,7 +78,7 @@ pub fn get_prompt_tokens(model: &str, messages: &[Message]) -> Result<i32> {
     Ok(num_tokens)
 }
 
-fn get_image_tokens(image: (u32, u32), detail: Option<ImageUrlDetail>) -> u32 {
+fn get_image_tokens(image: (u32, u32), detail: &Option<ImageUrlDetail>) -> u32 {
     match detail {
         Some(ImageUrlDetail::Low) => 85,
         None | Some(ImageUrlDetail::Auto) => {
@@ -91,36 +99,29 @@ fn get_image_tokens(image: (u32, u32), detail: Option<ImageUrlDetail>) -> u32 {
         //The shortest side is 1024, so we further scale down to 768 x 1536.
         //6 512px tiles are needed, so the final token cost is 170 * 6 + 85 = 1105.
         Some(ImageUrlDetail::High) => {
-            let mut width = image.0 as f32;
-            let mut height = image.1 as f32;
-
-            // Scale down to 2048x2048 if necessary
-            if width > 2048.0 {
-                let scale = 2048.0 / width;
-                width = 2048.0;
-                height *= scale;
-            }
-            if height > 2048.0 {
-                let scale = 2048.0 / height;
-                width *= scale;
-                height = 2048.0;
+            //get min max of the image width and height
+            let (mut min, mut max) = {
+                let width = image.0 as f32;
+                let height = image.1 as f32;
+                (width.min(height), width.max(height))
+            };
+            //if the max side is above 2048, scale down to 2048
+            if max > 2048.0 {
+                let scale = 2048.0 / max;
+                max = 2048.0;
+                min *= scale;
             }
 
-            // Scale shorter side to 768px
-            if width < height {
-                let scale = 768.0 / width;
-                width = 768.0;
-                height *= scale;
-            } else {
-                let scale = 768.0 / height;
-                width *= scale;
-                height = 768.0;
-            }
+            //scale the shortest side to 768
+            let scale = 768.0 / min;
+            max *= scale;
 
-            // Count 512px squares
-            let width_squares = (width / 512.0).ceil() as u32;
-            let height_squares = (height / 512.0).ceil() as u32;
-            85 + 170 * width_squares * height_squares
+            //fit into 512 squares
+            let max_squares = (max / 512.0).ceil() as u32;
+
+            //min_squares is always 768.div_ceil(512)=2
+            //170*2=340
+            85 + 340 * max_squares
         }
     }
 }
@@ -156,7 +157,7 @@ mod tests {
             ("2048-high", 2048, 4096, Some(ImageUrlDetail::High), 1105),
         ];
         for t in test_data {
-            let got = get_image_tokens((t.1, t.2), t.3);
+            let got = get_image_tokens((t.1, t.2), &t.3);
             assert_eq!(got, t.4, "test case: {}", t.0)
         }
     }
