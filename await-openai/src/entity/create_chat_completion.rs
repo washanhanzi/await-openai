@@ -147,7 +147,7 @@ pub enum FinishReason {
     ContentFilter,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Default, Serialize, Clone, PartialEq)]
 pub struct TopLogprobs {
     /// The token.
     pub token: String,
@@ -308,10 +308,11 @@ pub struct FunctionName {
     /// The name of the function to call.
     pub name: String,
 }
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Default, Serialize, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "type")]
 pub enum ResponseFormat {
+    #[default]
     Text,
     JsonObject,
 }

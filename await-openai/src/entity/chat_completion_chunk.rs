@@ -27,9 +27,7 @@ impl FromStr for Chunk {
     }
 }
 
-pub struct ChunkResponseDone;
-
-#[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
+#[derive(Debug, Default, Deserialize, Clone, PartialEq, Serialize)]
 pub struct ChunkResponse {
     /// A unique identifier for the completion.
     pub id: String,
