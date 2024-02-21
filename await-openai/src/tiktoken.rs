@@ -5,6 +5,9 @@ use tiktoken_rs::{
     tokenizer::{get_tokenizer, Tokenizer},
 };
 
+#[cfg(feature = "tiktoken-dd")]
+mod dd;
+
 pub fn get_prompt_tokens(model: &str, messages: &[Message]) -> Result<i32> {
     let tokenizer =
         get_tokenizer(model).ok_or_else(|| anyhow!("No tokenizer found for model {}", model))?;
