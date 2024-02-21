@@ -20,7 +20,7 @@ just some types I need to serialize/deserialize openai api
 
 6. token calculation with `tiktoken` feature
 
-7. function tool with `tools` feature, much more faster serilization than `openai-func-enums`
+7. function tool with `tools` feature, much more faster serilization compared to `openai-func-enums`
 
 ## benchmark
 
