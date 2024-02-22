@@ -49,7 +49,7 @@ pub struct ChunkResponse {
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Choice {
-    pub index: u32,
+    pub index: usize,
     pub delta: DeltaMessage,
     /// The reason the model stopped generating tokens. This will be `stop` if the model hit a natural stop point or a provided stop sequence,
     /// `length` if the maximum number of tokens specified in the request was reached,
@@ -73,7 +73,7 @@ pub struct DeltaMessage {
 
 #[derive(Debug, Deserialize, Serialize, Default, Clone, PartialEq)]
 pub struct ToolCallChunk {
-    pub index: u32,
+    pub index: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
