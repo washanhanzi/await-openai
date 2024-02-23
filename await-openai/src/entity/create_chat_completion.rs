@@ -276,6 +276,7 @@ pub struct ToolCallFunctionObj {
 pub struct ToolMessage {
     /// The contents of the tool message.
     pub content: String,
+    /// Tool call that this message is responding to.
     pub tool_call_id: String,
 }
 

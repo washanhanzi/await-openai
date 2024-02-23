@@ -71,7 +71,7 @@ impl Role {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Choice {
-    pub index: u32,
+    pub index: usize,
     pub message: Message,
     /// The reason the model stopped generating tokens. This will be `stop` if the model hit a natural stop point or a provided stop sequence,
     /// `length` if the maximum number of tokens specified in the request was reached,
