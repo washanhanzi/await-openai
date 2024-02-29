@@ -92,8 +92,6 @@ pub struct ToolCallFunctionObjChunk {
 
 #[cfg(test)]
 mod tests {
-    use crate::entity::chat_completion_object::Role;
-
     use super::*;
 
     #[test]

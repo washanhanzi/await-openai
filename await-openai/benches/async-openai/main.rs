@@ -2,8 +2,8 @@ use async_openai::types::{
     ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestSystemMessageArgs,
     ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs,
 };
-use await_openai::entity::create_chat_completion::{
-    Content, Message, RequestBody, SystemMessage, UserMessage,
+use await_openai::openai::entity::create_chat_completion::{
+    AssistantMessage, Content, Message, RequestBody, SystemMessage, UserMessage,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
 use serde::de::DeserializeOwned;
@@ -31,7 +31,15 @@ fn se_default_request() {
                 ..Default::default()
             }),
             Message::User(UserMessage {
-                content: Content::Text("Hello!".to_string()),
+                content: Content::Text("Who won the world series in 2020?".to_string()),
+                name: None,
+            }),
+            Message::Assistant(AssistantMessage {
+                content: Some("The Los Angeles Dodgers won the World Series in 2020.".to_string()),
+                ..Default::default()
+            }),
+            Message::User(UserMessage {
+                content: Content::Text("Where was it played?".to_string()),
                 name: None,
             }),
         ],

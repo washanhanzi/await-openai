@@ -3,23 +3,17 @@ use schemars::{gen::SchemaSettings, JsonSchema};
 
 use crate::entity::create_chat_completion::{FunctionTool, Tool, ToolType};
 
-pub fn get_function_param_json_value<T: JsonSchema>() -> &'static Result<serde_json::Value> {
-    static PARAM_JSON: std::sync::OnceLock<Result<serde_json::Value>> = std::sync::OnceLock::new();
-    PARAM_JSON.get_or_init(|| parse_function_param::<T>())
-}
-
-pub fn get_function_tool<T: JsonSchema>(name: &str, desc: Option<String>) -> &'static Result<Tool> {
-    static FUNCTION_TOOL: std::sync::OnceLock<Result<Tool>> = std::sync::OnceLock::new();
-    FUNCTION_TOOL.get_or_init(|| {
-        let json_value = parse_function_param::<T>()?;
-        Ok(Tool {
-            r#type: ToolType::Function,
-            function: FunctionTool {
-                name: name.to_string(),
-                description: desc,
-                parameters: Some(json_value.clone()),
-            },
-        })
+/// get_function_tool accept function name, description and parameters type and return [Tool]
+/// use OnceLock to ensure this function is only called once in your own code if necessary
+pub fn get_function_tool<T: JsonSchema>(name: &str, desc: Option<String>) -> Result<Tool> {
+    let json_value = parse_function_param::<T>()?;
+    Ok(Tool {
+        r#type: ToolType::Function,
+        function: FunctionTool {
+            name: name.to_string(),
+            description: desc,
+            parameters: Some(json_value),
+        },
     })
 }
 
@@ -47,8 +41,9 @@ fn parse_function_param<T: JsonSchema>() -> Result<serde_json::Value> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use schemars::JsonSchema;
+
+    use crate::tool::parse_function_param;
 
     #[derive(JsonSchema, serde::Deserialize)]
     pub struct MyStruct {
@@ -66,9 +61,7 @@ mod tests {
 
     #[test]
     fn test_serialize_example_function_tool() {
-        let schema = get_function_param_json_value::<MyStruct>()
-            .as_ref()
-            .unwrap();
+        let schema = parse_function_param::<MyStruct>().unwrap();
 
         // println!("{}", serde_json::to_string_pretty(&schema).unwrap());
         let got = serde_json::to_string(&schema).unwrap();

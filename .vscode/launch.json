@@ -11,14 +11,21 @@
 			"cargo": {
 				"args": [
 					"test",
+					"--package",
+					"await-openai",
 					"--lib",
-					"--package=await-openai",
-					"--package=await-openai",
-					"--features=tiktoken"
+					"tiktoken::tests::test_get_prompt_token",
+					"--features",
+					"tiktoken",
+					"--features",
+					"tools",
+					"--",
+					"--exact"
 				],
 			},
 			"args": [],
-			"cwd": "${workspaceFolder}"
+			"cwd": "${workspaceFolder}",
+			"terminal": "integrated"
 		},
 		{
 			"type": "lldb",
@@ -30,6 +37,7 @@
 					"--no-run",
 					"--bench=async-openai",
 					"--package=await-openai",
+					"--features=tiktoken"
 				],
 				"filter": {
 					"name": "async-openai",

@@ -54,6 +54,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-gemini"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "async-openai"
 version = "0.18.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -97,11 +104,12 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
 name = "await-openai"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-openai",
  "criterion",
+ "once_cell",
  "openai-func-enums",
  "schemars",
  "serde",
