@@ -1,5 +1,5 @@
 use async_openai::types::ChatCompletionToolType;
-use await_openai::openai::{entity::create_chat_completion::Tool, tool::get_function_tool};
+use await_openai::{entity::create_chat_completion::Tool, tool::get_function_tool};
 use openai_func_enums::{
     arg_description, get_tool_chat_completion_args, EnumDescriptor, FunctionCallResponse,
     VariantDescriptors,

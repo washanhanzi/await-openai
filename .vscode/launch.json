@@ -11,6 +11,7 @@
 			"cargo": {
 				"args": [
 					"test",
+					"--workspace",
 					"--package",
 					"await-openai",
 					"--lib",

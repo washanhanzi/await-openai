@@ -1,83 +1,29 @@
-use std::{fmt, marker::PhantomData};
+use std::fmt;
+
+use super::{deserialize_obj_or_arr, deserialize_option_obj_or_arr};
 
 use serde::{
-    de::{self, SeqAccess, Visitor},
-    Deserializer,
+    de::{self, MapAccess, SeqAccess, Visitor},
+    Deserialize, Deserializer, Serialize,
 };
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
-#[serde(rename_all = "camelCase")]
 pub struct RequestBody {
-    #[serde(deserialize_with = "deserialize_contents")]
+    #[serde(deserialize_with = "deserialize_obj_or_arr")]
     contents: Vec<Content>,
     /// A piece of code that enables the system to interact with external systems to perform an action, or set of actions, outside of knowledge and scope of the model.
     #[serde(skip_serializing_if = "Option::is_none")]
     tools: Option<Vec<Tool>>,
-    #[serde(deserialize_with = "deserialize_safety_settings")]
     #[serde(skip_serializing_if = "Option::is_none")]
     safety_settings: Option<Vec<SafetySetting>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     generation_config: Option<GenerateionConfig>,
 }
 
-// This is your custom deserializer wrapper
-struct VecContent(Vec<Content>);
-
-fn deserialize_contents<'de, D>(deserializer: D) -> Result<Vec<Content>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    // Define a visitor to handle both single `Content` and `Vec<Content>`
-    struct VecContentVisitor;
-
-    impl<'de> Visitor<'de> for VecContentVisitor {
-        type Value = Vec<Content>;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a map or a sequence of maps")
-        }
-
-        // This method is called when a single map is encountered
-        fn visit_map<M>(self, map: M) -> Result<Self::Value, M::Error>
-        where
-            M: de::MapAccess<'de>,
-        {
-            let content = Content::deserialize(de::value::MapAccessDeserializer::new(map))?;
-            Ok(vec![content])
-            // let mut contents = Vec::with_capacity(1);
-            // while let Some(c) = map.next_key::<Content>()? {
-            //     // contents.push(map.next_value_seed(c)?);
-            //     println!("{:?}", c);
-            // }
-            // Ok(contents)
-            // let content = Content::deserialize(de::value::MapAccessDeserializer::new(map))?;
-            // Ok(VecContent(vec![content]))
-        }
-
-        // This method is called when a sequence is encountered
-        fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
-        where
-            S: SeqAccess<'de>,
-        {
-            let mut contents = Vec::new();
-            while let Some(c) = seq.next_element()? {
-                contents.push(c);
-            }
-            Ok(contents)
-            // let contents =
-            //     Deserialize::deserialize(de::value::SeqAccessDeserializer::new(seq))?;
-            // Ok(VecContent(contents))
-        }
-    }
-
-    // Invoke the appropriate visitor based on the JSON data
-    deserializer.deserialize_any(VecContentVisitor)
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Content {
     role: Role,
+    #[serde(deserialize_with = "deserialize_obj_or_arr")]
     parts: Vec<ContentPart>,
 }
 
@@ -99,13 +45,15 @@ pub enum Role {
 #[serde(untagged)]
 pub enum ContentPart {
     /// The text instructions or chat dialogue to include in the prompt.
-    #[serde(rename = "text")]
-    Text(String),
+    Text(TextData),
     /// Serialized bytes data of the image or video. You can specify at most 1 image with inlineData. To specify up to 16 images, use fileData.
-    #[serde(rename = "inlineData")]
     Inline(InlineData),
-    #[serde(rename = "fileData")]
     File(FileData),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct TextData {
+    text: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -182,48 +130,6 @@ pub struct SafetySetting {
     threshhold: SafetySettingThreshold,
 }
 
-fn deserialize_safety_settings<'de, D>(
-    deserializer: D,
-) -> Result<Option<Vec<SafetySetting>>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    // Create a visitor that can handle both a single SafetySetting object and a Vec<SafetySetting>.
-    struct SafetySettingsVisitor;
-
-    impl<'de> Visitor<'de> for SafetySettingsVisitor {
-        type Value = Option<Vec<SafetySetting>>;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a SafetySetting object or an array of SafetySetting objects")
-        }
-
-        // Handle a single SafetySetting object by wrapping it in a Vec.
-        fn visit_map<M>(self, map: M) -> Result<Self::Value, M::Error>
-        where
-            M: serde::de::MapAccess<'de>,
-        {
-            let safety_setting: SafetySetting =
-                Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))?;
-            Ok(Some(vec![safety_setting]))
-        }
-
-        // Handle an array of SafetySetting objects.
-        fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
-        where
-            S: SeqAccess<'de>,
-        {
-            let mut safety_settings = Vec::new();
-            while let Some(safety_setting) = seq.next_element()? {
-                safety_settings.push(safety_setting);
-            }
-            Ok(Some(safety_settings))
-        }
-    }
-
-    deserializer.deserialize_any(SafetySettingsVisitor)
-}
-
 /// The safety category to configure a threshold for. Acceptable values include the following:
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -287,25 +193,15 @@ mod tests {
     #[test]
     fn serde() {
         let tests = vec![(
-            "default",
-            r#"{"contents": {"role": "user","parts": {"text": "Give me a recipe for banana bread."}}"#,
+            "simple",
+            r#"{"contents": {"role": "user","parts": {"text": "Give me a recipe for banana bread."}}}"#,
             RequestBody {
                 contents: vec![Content {
                     role: Role::User,
-                    parts: vec![ContentPart::Text(
-                        "Give me a recipe for banana bread.".to_string(),
-                    )],
+                    parts: vec![ContentPart::Text(TextData {
+                        text: "Give me a recipe for banana bread.".to_string(),
+                    })],
                 }],
-                safety_settings: Some(vec![SafetySetting {
-                    category: SafetySettingCategory::HarmCategorySexuallyExplicit,
-                    threshhold: SafetySettingThreshold::BlockLowAndAbove,
-                }]),
-                generation_config: Some(GenerateionConfig {
-                    temperature: 0.2,
-                    top_p: 0.8,
-                    top_k: Some(40),
-                    ..Default::default()
-                }),
                 ..Default::default()
             },
         )];

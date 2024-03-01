@@ -2,7 +2,7 @@ use async_openai::types::{
     ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestSystemMessageArgs,
     ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs,
 };
-use await_openai::openai::entity::create_chat_completion::{
+use await_openai::entity::create_chat_completion::{
     AssistantMessage, Content, Message, RequestBody, SystemMessage, UserMessage,
 };
 use criterion::{criterion_group, criterion_main, Criterion};

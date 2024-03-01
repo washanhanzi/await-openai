@@ -58,6 +58,7 @@ name = "async-gemini"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -109,7 +110,6 @@ dependencies = [
  "anyhow",
  "async-openai",
  "criterion",
- "once_cell",
  "openai-func-enums",
  "schemars",
  "serde",

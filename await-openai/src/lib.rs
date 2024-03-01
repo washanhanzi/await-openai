@@ -3,5 +3,5 @@ pub mod entity;
 #[cfg(feature = "tiktoken")]
 pub mod tiktoken;
 
-#[cfg(feature = "openai_tools")]
+#[cfg(feature = "tools")]
 pub mod tool;

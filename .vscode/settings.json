@@ -1,7 +1,7 @@
 {
 	"rust-analyzer.cargo.features": [
 		"tiktoken",
-		"openai_tools",
+		"tools",
 	],
 	"rust-analyzer.linkedProjects": [
 		"await-openai/Cargo.toml",
