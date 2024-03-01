@@ -4,7 +4,7 @@ use serde::{
 };
 use std::fmt;
 
-pub fn deserialize_obj_or_arr<'de, T, D>(__deserializer: D) -> Result<Vec<T>, D::Error>
+pub fn deserialize_obj_or_vec<'de, T, D>(__deserializer: D) -> Result<Vec<T>, D::Error>
 where
     T: Deserialize<'de>,
     D: Deserializer<'de>,
@@ -52,7 +52,7 @@ where
     )
 }
 
-pub fn deserialize_option_obj_or_arr<'de, T, D>(
+pub fn deserialize_option_obj_or_vec<'de, T, D>(
     __deserializer: D,
 ) -> Result<Option<Vec<T>>, D::Error>
 where
@@ -69,7 +69,7 @@ where
     {
         type Value = Option<Vec<T>>;
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("an object or array of objects")
+            formatter.write_str("an object, an array of objects, or null")
         }
 
         fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
@@ -90,12 +90,16 @@ where
         where
             M: MapAccess<'de>,
         {
-            let bar: Option<T> =
-                Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))?;
-            match bar {
-                None => Ok(None),
-                Some(bar) => Ok(Some(vec![bar])),
-            }
+            let bar: T = Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))?;
+            Ok(Some(vec![bar])) // Wrap in a Vec if Bar is Some
+        }
+
+        // Handle null input for optional fields
+        fn visit_none<E>(self) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(None)
         }
     }
     Deserializer::deserialize_any(
