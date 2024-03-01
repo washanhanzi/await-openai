@@ -3,20 +3,17 @@
 just some code I need to deal with openai api.
 
 > [!WARNING]
-> the API is not stable
+> API is not stable
 
-## features
-
-### openai
-
-types to work with openai api
-
-only chat completion for now
+only support chat completion for now
 
 compare to [async-openai](https://github.com/64bit/async-openai)
 
 - tag enum variant
 - dedicate completion chunk type
+- only types
+
+## features
 
 ### tiktoken
 
@@ -24,7 +21,7 @@ tokens usage calculation for openai api.
 
 support tools tokens usage estimation and image tokens usage calculation.
 
-### openai_tools
+### tool
 
 blazing fast serilization compared to [openai-func-enums](https://github.com/frankfralick/openai-func-enums)
 

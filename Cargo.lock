@@ -105,7 +105,7 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
 name = "await-openai"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -114,7 +114,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
- "tiktoken-rs 0.5.8",
+ "tiktoken-rs",
 ]
 
 [[package]]
@@ -458,16 +458,6 @@ name = "fancy-regex"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b95f7c0680e4142284cf8b22c14a476e87d61b004a3a0861872b32ef7ead40a2"
-dependencies = [
- "bit-set",
- "regex",
-]
-
-[[package]]
-name = "fancy-regex"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7493d4c459da9f84325ad297371a6b2b8a162800873a22e3b6b6512e61d18c05"
 dependencies = [
  "bit-set",
  "regex",
@@ -926,7 +916,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.52",
- "tiktoken-rs 0.4.5",
+ "tiktoken-rs",
 ]
 
 [[package]]
@@ -1512,22 +1502,7 @@ dependencies = [
  "anyhow",
  "base64",
  "bstr",
- "fancy-regex 0.11.0",
- "lazy_static",
- "parking_lot",
- "rustc-hash",
-]
-
-[[package]]
-name = "tiktoken-rs"
-version = "0.5.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40894b788eb28bbb7e36bdc8b7b1b1488b9c93fa3730f315ab965330c94c0842"
-dependencies = [
- "anyhow",
- "base64",
- "bstr",
- "fancy-regex 0.12.0",
+ "fancy-regex",
  "lazy_static",
  "parking_lot",
  "rustc-hash",

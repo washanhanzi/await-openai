@@ -1,7 +1,7 @@
 [package]
 name = "await-openai"
 description = "utils for openai"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 readme = "README.md"
 keywords = ["openai"]
@@ -26,7 +26,7 @@ openai-func-enums = "0"
 [features]
 default = []
 tiktoken = ["tiktoken-rs", "anyhow"]
-tools = ["schemars", "anyhow"]
+tool = ["schemars", "anyhow"]
 
 [[bench]]
 name = "async-openai"

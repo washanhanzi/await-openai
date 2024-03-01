@@ -19,7 +19,7 @@
 					"--features",
 					"tiktoken",
 					"--features",
-					"tools",
+					"tool",
 					"--",
 					"--exact"
 				],
