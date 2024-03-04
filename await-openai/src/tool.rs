@@ -2,6 +2,7 @@ use anyhow::{anyhow, Result};
 use schemars::{gen::SchemaSettings, JsonSchema};
 
 use crate::entity::create_chat_completion::{FunctionTool, Tool, ToolType};
+pub use paste;
 
 /// get_function_tool accept function name, description and parameters type and return [Tool]
 /// use OnceLock to ensure this function is only called once in your own code if necessary
@@ -20,7 +21,7 @@ pub fn get_function_tool<T: JsonSchema>(name: &str, desc: Option<String>) -> Res
 #[macro_export]
 macro_rules! define_function_tool {
     ($tool_name:ident, $function_name:expr, $description:expr, $param_type:ty) => {
-        paste::paste! {
+        $crate::tool::paste::paste! {
             static [<$tool_name _ONCE_LOCK>]: std::sync::OnceLock<$crate::entity::create_chat_completion::Tool> = std::sync::OnceLock::new();
 
             pub fn [<get_ $tool_name:lower>]() -> &'static $crate::entity::create_chat_completion::Tool {
