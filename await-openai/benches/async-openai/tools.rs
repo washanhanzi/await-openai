@@ -1,5 +1,5 @@
 use async_openai::types::ChatCompletionToolType;
-use await_openai::{entity::create_chat_completion::Tool, tool::get_function_tool};
+use await_openai::{define_function_tool, entity::create_chat_completion::Tool};
 use openai_func_enums::{
     arg_description, get_tool_chat_completion_args, EnumDescriptor, FunctionCallResponse,
     VariantDescriptors,
@@ -41,14 +41,14 @@ pub fn de_function_tool_param() {
         Fahrenheit,
     }
 
-    let _tools: Vec<Tool> = vec![get_function_tool::<MyStruct>(
+    define_function_tool!(
+        GET_WEATHER,
         "get_current_weather",
-        Some(
-            "Get the current weather in the location closest to the one provided location"
-                .to_string(),
-        ),
-    )
-    .unwrap()];
+        "Get the current weather in the location closest to the one provided location",
+        MyStruct
+    );
+
+    let _tools: Vec<Tool> = vec![get_get_weather().clone()];
 }
 
 pub fn de_function_tool_param_use_func_enums() {

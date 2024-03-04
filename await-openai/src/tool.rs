@@ -17,6 +17,25 @@ pub fn get_function_tool<T: JsonSchema>(name: &str, desc: Option<String>) -> Res
     })
 }
 
+#[macro_export]
+macro_rules! define_function_tool {
+    ($tool_name:ident, $function_name:expr, $description:expr, $param_type:ty) => {
+        paste::paste! {
+            static [<$tool_name _ONCE_LOCK>]: std::sync::OnceLock<$crate::entity::create_chat_completion::Tool> = std::sync::OnceLock::new();
+
+            pub fn [<get_ $tool_name:lower>]() -> &'static $crate::entity::create_chat_completion::Tool {
+                [<$tool_name _ONCE_LOCK>].get_or_init(|| {
+                    $crate::tool::get_function_tool::<$param_type>(
+                        $function_name,
+                        Some($description.to_string()),
+                    )
+                    .unwrap()
+                })
+            }
+        }
+    };
+}
+
 fn parse_function_param<T: JsonSchema>() -> Result<serde_json::Value> {
     let settings = SchemaSettings::default().with(|s| {
         s.option_nullable = false;
@@ -99,5 +118,34 @@ mod tests {
             "Expected: celsius got: {:?}",
             got.unit
         );
+    }
+
+    #[test]
+    fn test_macro() {
+        define_function_tool!(MY_TOOL, "my_tool", "my tool description", MyStruct);
+        let tool = get_my_tool();
+        assert_eq!(
+            tool.r#type,
+            crate::entity::create_chat_completion::ToolType::Function
+        );
+        assert_eq!(tool.function.name, "my_tool");
+        assert_eq!(
+            tool.function.description,
+            Some("my tool description".to_string())
+        );
+        assert!(tool.function.parameters.is_some());
+
+        define_function_tool!(MY_TOOL2, "my_tool2", "my tool description", MyStruct);
+        let tool2 = get_my_tool2();
+        assert_eq!(
+            tool2.r#type,
+            crate::entity::create_chat_completion::ToolType::Function
+        );
+        assert_eq!(tool2.function.name, "my_tool2");
+        assert_eq!(
+            tool2.function.description,
+            Some("my tool description".to_string())
+        );
+        assert!(tool2.function.parameters.is_some());
     }
 }

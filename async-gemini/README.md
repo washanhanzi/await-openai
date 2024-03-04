@@ -1,7 +1,7 @@
 # async-gemini
 
 > [!WARNING]
-> API is not stable
+> not stable
 
 There are two versions of Gemini API.
 
