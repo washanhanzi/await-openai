@@ -1,5 +1,8 @@
 # async-gemini
 
+> [!WARNING]
+> API is not stable
+
 There are two versions of Gemini API.
 
 - [Gemini API](https://ai.google.dev/api/rest)
