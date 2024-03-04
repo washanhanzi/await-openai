@@ -1,13 +1,18 @@
-use super::{deserialize_obj_or_vec, deserialize_option_obj_or_vec};
+use crate::{
+    models::generate_content::HarmCategory,
+    util::{deserialize_obj_or_vec, deserialize_option_obj_or_vec},
+};
 
-use serde::{de, Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
+
+use super::Content;
 
 /// when deserilization:
 /// - google api support both camelCase and snake_case key, but we only support camel case.
 /// - google api allow trailling comma, but not here
 #[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct RequestBody {
+pub struct GenerateContentRequest {
     #[serde(deserialize_with = "deserialize_obj_or_vec")]
     contents: Vec<Content>,
     /// A piece of code that enables the system to interact with external systems to perform an action, or set of actions, outside of knowledge and scope of the model.
@@ -18,115 +23,6 @@ pub struct RequestBody {
     safety_settings: Option<Vec<SafetySetting>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     generation_config: Option<GenerateionConfig>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub struct Content {
-    #[serde(deserialize_with = "deserialize_role")]
-    role: Role,
-    #[serde(deserialize_with = "deserialize_obj_or_vec")]
-    parts: Vec<ContentPart>,
-}
-
-///The role in a conversation associated with the content. Specifying a role is required even in singleturn use cases. Acceptable values include the following:
-///USER: Specifies content that's sent by you.
-///MODEL: Specifies the model's response.
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
-#[serde(rename_all = "lowercase")]
-pub enum Role {
-    User,
-    Model,
-}
-
-fn deserialize_role<'de, D>(deserializer: D) -> Result<Role, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s = String::deserialize(deserializer)?;
-    let ss = s.to_lowercase();
-    match ss.as_str() {
-        "user" => Ok(Role::User),
-        "model" => Ok(Role::Model),
-        _ => Err(de::Error::custom("Invalid value for Role")),
-    }
-}
-// impl<'de> Deserialize<'de> for Role {
-//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-//     where
-//         D: Deserializer<'de>,
-//     {
-//         let s = String::deserialize(deserializer)?;
-//         match s.to_lowercase().as_str() {
-//             "user" => Ok(Role::User),
-//             "model" => Ok(Role::Model),
-//             _ => Err(de::Error::custom("Invalid value for Role")),
-//         }
-//     }
-// }
-
-/// Ordered parts that make up the input. Parts may have different MIME types.
-/// For gemini-1.0-pro, only the text field is valid. The token limit is 32k.
-/// For gemini-1.0-pro-vision, you may specify either text only, text and up to 16 images, or text and 1 video. The token limit is 16k.
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub enum ContentPart {
-    /// The text instructions or chat dialogue to include in the prompt.
-    #[serde(rename = "text")]
-    Text(String),
-    /// Serialized bytes data of the image or video. You can specify at most 1 image with inlineData. To specify up to 16 images, use fileData.
-    #[serde(rename = "inlineData")]
-    Inline(InlineData),
-    #[serde(rename = "fileData")]
-    File(FileData),
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct InlineData {
-    /// The media type of the image or video specified in the data or fileUri fields. Acceptable values include the following:
-    ///
-    /// image/png
-    /// image/jpeg
-    /// video/mov
-    /// video/mpeg
-    /// video/mp4
-    /// video/mpg
-    /// video/avi
-    /// video/wmv
-    /// video/mpegps
-    /// video/flv
-    ///
-    ///
-    /// Maximum video length: 2 minutes.
-    ///
-    /// No limit on image resolution.
-    mime_type: String,
-    /// The base64 encoding of the image or video to include inline in the prompt. When including media inline, you must also specify MIMETYPE.
-    /// size limit: 20MB
-    data: String,
-    video_metadata: Option<VideoMetadata>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct FileData {
-    mime_type: String,
-    ///The Cloud Storage URI of the image or video to include in the prompt. The bucket that stores the file must be in the same Google Cloud project that's sending the request. You must also specify MIMETYPE.
-    ///size limit: 20MB
-    file_uri: String,
-    video_metadata: Option<VideoMetadata>,
-}
-
-/// Optional. For video input, the start and end offset of the video in Duration format. For example, to specify a 10 second clip starting at 1:00, set "start_offset": { "seconds": 60 } and "end_offset": { "seconds": 70 }.
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
-pub struct VideoMetadata {
-    start_offset: VideoOffset,
-    end_offset: VideoOffset,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
-pub struct VideoOffset {
-    seconds: i64,
-    nanos: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -149,18 +45,8 @@ pub struct FunctionTool {
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct SafetySetting {
-    category: SafetySettingCategory,
+    category: HarmCategory,
     threshold: SafetySettingThreshold,
-}
-
-/// The safety category to configure a threshold for. Acceptable values include the following:
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum SafetySettingCategory {
-    HarmCategorySexuallyExplicit,
-    HarmCategoryHateSpeech,
-    HarmCategoryHarassment,
-    HarmCategoryDangerousContent,
 }
 
 /// The threshold for blocking responses that could belong to the specified safety category based on probability.
@@ -214,6 +100,8 @@ pub struct GenerateionConfig {
 mod tests {
     use serde_json::json;
 
+    use crate::models::generate_content::{Content, FileData, Part, Role};
+
     use super::*;
     #[test]
     fn serde() {
@@ -221,10 +109,10 @@ mod tests {
             (
                 "simple",
                 r#"{"contents": {"role": "user","parts": {"text": "Give me a recipe for banana bread."}}}"#,
-                RequestBody {
+                GenerateContentRequest {
                     contents: vec![Content {
                         role: Role::User,
-                        parts: vec![ContentPart::Text(
+                        parts: vec![Part::Text(
                              "Give me a recipe for banana bread.".to_string(),
                         )],
                     }],
@@ -254,15 +142,15 @@ mod tests {
                         "topK": 40
                     }
                 }"#,
-                RequestBody {
+                GenerateContentRequest {
                     contents: vec![Content {
                         role: Role::User,
-                        parts: vec![ContentPart::Text(
+                        parts: vec![Part::Text(
                              "Give me a recipe for banana bread.".to_string(),
                         )],
                     }],
                     safety_settings: Some(vec![SafetySetting {
-                        category: SafetySettingCategory::HarmCategorySexuallyExplicit,
+                        category: HarmCategory::SexuallyExplicit,
                         threshold: SafetySettingThreshold::BlockLowAndAbove,
                     }]),
                     generation_config: Some(GenerateionConfig {
@@ -302,29 +190,29 @@ mod tests {
                       "maxOutputTokens": 200
                     }
                   }"#,
-                RequestBody {
+                GenerateContentRequest {
                     contents: vec![
                         Content {
                             role: Role::User,
-                            parts: vec![ContentPart::Text(
+                            parts: vec![Part::Text(
                                  "Hello!".to_string(),
                             )],
                         },
                         Content {
                             role: Role::Model,
-                            parts: vec![ContentPart::Text(
+                            parts: vec![Part::Text(
                                  "Argh! What brings ye to my ship?".to_string(),
                             )],
                         },
                         Content {
                             role: Role::User,
-                            parts: vec![ContentPart::Text(
+                            parts: vec![Part::Text(
                                  "Wow! You are a real-life priate!".to_string(),
                             )],
                         },
                     ],
                     safety_settings: Some(vec![SafetySetting {
-                        category: SafetySettingCategory::HarmCategorySexuallyExplicit,
+                        category: HarmCategory::SexuallyExplicit,
                         threshold: SafetySettingThreshold::BlockLowAndAbove,
                     }]),
                     generation_config: Some(GenerateionConfig {
@@ -365,22 +253,22 @@ mod tests {
                       "maxOutputTokens": 2048
                     }
                   }"#,
-                RequestBody {
+                GenerateContentRequest {
                     contents: vec![Content {
                         role: Role::User,
                         parts: vec![
-                            ContentPart::File(FileData {
+                            Part::File(FileData {
                                 mime_type: "image/jpeg".to_string(),
                                 file_uri: "gs://cloud-samples-data/ai-platform/flowers/daisy/10559679065_50d2b16f6d.jpg".to_string(),
                                 video_metadata: None,
                             }),
-                            ContentPart::Text(
+                            Part::Text(
                                  "Describe this picture.".to_string(),
                             ),
                         ],
                     }],
                     safety_settings: Some(vec![SafetySetting {
-                        category: SafetySettingCategory::HarmCategorySexuallyExplicit,
+                        category: HarmCategory::SexuallyExplicit,
                         threshold: SafetySettingThreshold::BlockLowAndAbove,
                     }]),
                     generation_config: Some(GenerateionConfig {
@@ -480,11 +368,11 @@ mod tests {
                       }
                     ]
                   }"#,
-                RequestBody {
+                GenerateContentRequest {
                     contents: vec![Content {
                         role: Role::User,
                         parts: vec![
-                            ContentPart::Text(
+                            Part::Text(
                                  "Which theaters in Mountain View show Barbie movie?".to_string(),
                             ),
                         ],
@@ -570,11 +458,11 @@ mod tests {
         ];
         for (name, json, expected) in tests {
             //test deserialize
-            let actual: RequestBody = serde_json::from_str(json).unwrap();
+            let actual: GenerateContentRequest = serde_json::from_str(json).unwrap();
             assert_eq!(actual, expected, "deserialize test failed: {}", name);
             //test serialize
             let serialized = serde_json::to_string(&expected).unwrap();
-            let actual: RequestBody = serde_json::from_str(&serialized).unwrap();
+            let actual: GenerateContentRequest = serde_json::from_str(&serialized).unwrap();
             assert_eq!(actual, expected, "serialize test failed: {}", name);
         }
     }
