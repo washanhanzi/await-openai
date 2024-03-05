@@ -3,6 +3,7 @@ name = "async-gemini"
 version = "0.0.4"
 edition = "2021"
 description = "utils for gemini"
+keywords = ["gemini"]
 license = "MIT"
 license-file = "LICENSE"
 homepage = "https://github.com/washanhanzi/await-openai"
