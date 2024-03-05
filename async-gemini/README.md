@@ -14,3 +14,5 @@ The endpoint is: `generativelanguage.googleapis.com/v1beta`
 The endpoint is: `{location}-aiplatform.googleapis.com/v1`
 
 This library is primarily designed to support the first version of the Gemini API. While the Gemini API on Vertex AI has not been thoroughly tested.
+
+Gemini API

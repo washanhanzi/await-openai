@@ -1,1 +1,3 @@
-./await-openai/README.md
+- [await-openai](./await-openai/)
+- [async-gemini](./async-gemini/)
+- [async-claude](./async-claude/)

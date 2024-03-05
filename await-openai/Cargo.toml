@@ -5,6 +5,7 @@ version = "0.6.1"
 edition = "2021"
 readme = "README.md"
 keywords = ["openai"]
+license = "MIT"
 license-file = "LICENSE"
 homepage = "https://github.com/washanhanzi/await-openai"
 repository = "https://github.com/washanhanzi/await-openai"
