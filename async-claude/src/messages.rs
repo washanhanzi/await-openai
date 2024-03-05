@@ -5,8 +5,8 @@ mod stream_response;
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
 pub struct Message {
-    role: Role,
-    content: MessageContent,
+    pub role: Role,
+    pub content: MessageContent,
 }
 
 #[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
@@ -31,6 +31,8 @@ pub enum ContentBlock {
     Text { text: String },
     #[serde(rename = "image")]
     Image { source: ImageSource },
+    #[serde(rename = "text_delta")]
+    TextDelta { text: String },
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
@@ -50,6 +52,6 @@ pub enum StopReason {
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
 pub struct Usage {
-    input_tokens: Option<u32>,
-    output_tokens: u32,
+    pub input_tokens: Option<u32>,
+    pub output_tokens: u32,
 }
