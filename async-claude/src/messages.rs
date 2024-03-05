@@ -3,6 +3,9 @@ mod request;
 mod response;
 mod stream_response;
 
+#[cfg(feature = "openai")]
+pub mod openai;
+
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
 pub struct Message {
     pub role: Role,

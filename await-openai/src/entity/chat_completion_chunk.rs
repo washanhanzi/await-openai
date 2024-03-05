@@ -3,7 +3,7 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    chat_completion_object::{Logprobs, Role},
+    chat_completion_object::{Logprobs, Role, Usage},
     create_chat_completion::FinishReason,
 };
 
@@ -33,7 +33,7 @@ pub struct ChunkResponse {
     pub id: String,
     pub choices: Vec<Choice>,
     /// The Unix timestamp (in seconds) of when the completion was created.
-    pub created: u32,
+    pub created: u64,
 
     /// The model used for completion.
     pub model: String,
@@ -45,6 +45,11 @@ pub struct ChunkResponse {
 
     /// The object type, which is always "text_completion"
     pub object: String,
+
+    /// for compatible with other llm providers
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_deserializing)]
+    pub usage: Option<Usage>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]
@@ -115,6 +120,7 @@ mod tests {
                         },
                         ..Default::default()
                     }],
+                    usage: None,
                 },
             ),
             (
@@ -134,6 +140,7 @@ mod tests {
                         },
                         ..Default::default()
                     }],
+                    usage: None,
                 },
             ),
             (
@@ -153,6 +160,7 @@ mod tests {
                         finish_reason: Some(FinishReason::Stop),
                         ..Default::default()
                     }],
+                    usage: None,
                 },
             ),
             (
@@ -179,6 +187,7 @@ mod tests {
                         },
                         ..Default::default()
                     }],
+                    usage: None,
                 },
             ),
         ];

@@ -3,7 +3,8 @@
 		"tiktoken",
 		"tool",
 		"models",
-		"util"
+		"util",
+		"openai"
 	],
 	"rust-analyzer.linkedProjects": [
 		"await-openai/Cargo.toml",

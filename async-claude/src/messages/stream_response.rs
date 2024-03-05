@@ -1,4 +1,8 @@
-use std::{convert::Infallible, str::FromStr};
+use std::{
+    convert::Infallible,
+    fmt::{self, Display, Formatter},
+    str::FromStr,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -63,6 +67,14 @@ pub enum EventData {
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum ErrorData {
     OverloadedError { message: String },
+}
+
+impl Display for ErrorData {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            ErrorData::OverloadedError { message } => write!(f, "OverloadedError: {}", message),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
