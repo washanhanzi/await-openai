@@ -10,7 +10,7 @@ pub struct Response {
     pub id: String,
     pub choices: Vec<Choice>,
     /// The Unix timestamp (in seconds) of when the completion was created.
-    pub created: u32,
+    pub created: u64,
 
     /// The model used for completion.
     pub model: String,
@@ -69,7 +69,7 @@ impl Role {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Default, Serialize, Clone, PartialEq)]
 pub struct Choice {
     pub index: usize,
     pub message: Message,
@@ -82,13 +82,13 @@ pub struct Choice {
     pub logprobs: Option<Logprobs>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Logprobs {
     /// A list of message content tokens with log probability information.
     pub content: Option<Vec<LogprobContent>>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]
 pub struct LogprobContent {
     /// The token.
     pub token: String,
@@ -100,7 +100,7 @@ pub struct LogprobContent {
     pub top_logprobs: Vec<TopLogprobs>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]
 pub struct TopLogprobs {
     /// The token.
     pub token: String,

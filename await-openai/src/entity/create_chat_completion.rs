@@ -138,16 +138,17 @@ pub enum ToolType {
     Function,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone, Copy, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum FinishReason {
+    #[default]
     Stop,
     Length,
     ToolCalls,
     ContentFilter,
 }
 
-#[derive(Debug, Deserialize, Default, Serialize, Clone, PartialEq)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]
 pub struct TopLogprobs {
     /// The token.
     pub token: String,
@@ -256,7 +257,7 @@ pub enum ToolCall {
     Function(ToolCallFunction),
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]
 pub struct ToolCallFunction {
     /// The ID of the tool call.
     pub id: String,

@@ -112,7 +112,7 @@ impl TokenCounter {
 /// This function provides an estimated count when the prompt includes [`Tool`] and [`AssistantMessage`]'s [`ToolCall`].
 /// It's important to note that an exact methodology for calculating token usage for [`Tool`] and [`ToolCall`] has not been disclosed by OpenAI.
 /// For context, see [generating TypeScript definitions](https://community.openai.com/t/how-to-calculate-the-tokens-when-using-function-call/266573/6) as an example.
-/// Given the absence of an official method and unreliable results of the above method other than get_current_weather example,
+/// Given the absence of an official method and unreliable results of the above method got from other than get_current_weather example,
 /// this implementation adopts a more efficient approach to estimate token usage, potentially sacrificing some degree of accuracy for improved performance and simplicity.
 /// You can check the test cases for the estimated and actual token usage.
 ///
@@ -125,8 +125,8 @@ pub fn get_prompt_tokens(model: &str, messages: &[Message], tools: Option<&[Tool
     }
     let bpe = get_bpe_from_tokenizer(tokenizer)?;
 
-    //now gpt-3.5-turbo and gpt-4-turbo both use 4 as token per message
-    //it seems the following logic is deprecated for now
+    // now gpt-3.5-turbo and gpt-4-turbo both use 4 as token per message
+    // it seems the following logic is deprecated for now
     // let (tokens_per_message, tokens_per_name) = if model.starts_with("gpt-3.5") {
     //     (
     //         4,  // every message follows <im_start>{role/name}\n{content}<im_end>\n

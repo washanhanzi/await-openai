@@ -5,7 +5,7 @@ use crate::entity::create_chat_completion::{FunctionTool, Tool, ToolType};
 pub use paste;
 
 /// get_function_tool accept function name, description and parameters type and return [Tool]
-/// use OnceLock to ensure this function is only called once in your own code if necessary
+/// use define_function_tool macro to create tool if you want to use the tool multiple times
 pub fn get_function_tool<T: JsonSchema>(name: &str, desc: Option<String>) -> Result<Tool> {
     let json_value = parse_function_param::<T>()?;
     Ok(Tool {
@@ -18,6 +18,7 @@ pub fn get_function_tool<T: JsonSchema>(name: &str, desc: Option<String>) -> Res
     })
 }
 
+/// define_function_tool macro will create a static OnceLock<Tool> with the name <TOOL_NAME>_ONCE_LOCK
 #[macro_export]
 macro_rules! define_function_tool {
     ($tool_name:ident, $function_name:expr, $description:expr, $param_type:ty) => {
