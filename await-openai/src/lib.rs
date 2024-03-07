@@ -5,3 +5,6 @@ pub mod tiktoken;
 
 #[cfg(feature = "tool")]
 pub mod tool;
+
+#[cfg(feature = "claude")]
+pub mod claude;

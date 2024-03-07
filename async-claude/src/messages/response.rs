@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{ContentBlock, Role, StopReason, Usage};
 
-#[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, Default, Clone, PartialEq, Serialize)]
 pub struct Response {
     pub id: String,
     pub r#type: String,

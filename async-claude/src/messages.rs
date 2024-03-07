@@ -1,10 +1,13 @@
 use serde::{Deserialize, Serialize};
-mod request;
-mod response;
-mod stream_response;
-
-#[cfg(feature = "openai")]
-pub mod openai;
+pub mod request;
+#[allow(unused_imports)]
+pub use request::*;
+pub mod response;
+#[allow(unused_imports)]
+pub use response::*;
+pub mod stream_response;
+#[allow(unused_imports)]
+pub use stream_response::*;
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
 pub struct Message {
@@ -53,7 +56,7 @@ pub enum StopReason {
     StopSequence,
 }
 
-#[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, Default, Clone, PartialEq, Serialize)]
 pub struct Usage {
     pub input_tokens: Option<u32>,
     pub output_tokens: u32,

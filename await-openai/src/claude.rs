@@ -1,18 +1,23 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    collections::VecDeque,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
-use await_openai::entity::{
+use anyhow::Result;
+
+use crate::entity::{
     chat_completion_chunk::{Choice, Chunk, ChunkResponse, DeltaMessage},
-    chat_completion_object::Role as OpenaiRole,
-    create_chat_completion::{Content, ContentPart, FinishReason, Message as OpenaiMessage, Stop},
+    chat_completion_object::{Response as OpenaiResponse, Role as OpenaiRole},
+    create_chat_completion::{
+        Content, ContentPart, FinishReason, Message as OpenaiMessage,
+        RequestBody as OpenaiRequestBody, Stop,
+    },
 };
 
-use super::{
-    request::Request, stream_response::EventData, ContentBlock, ImageSource, Message,
-    MessageContent, Role, StopReason,
-};
+pub use async_claude::messages::*;
 
-impl From<await_openai::entity::create_chat_completion::RequestBody> for Request {
-    fn from(body: await_openai::entity::create_chat_completion::RequestBody) -> Self {
+impl From<OpenaiRequestBody> for Request {
+    fn from(body: OpenaiRequestBody) -> Self {
         let mut res = Request {
             model: body.model,
             stream: body.stream,
@@ -100,40 +105,50 @@ fn parse_mime_from_base64(s: &str) -> Option<String> {
     }
 }
 
-impl From<super::stream_response::EventData>
-    for Option<await_openai::entity::chat_completion_chunk::Chunk>
-{
-    fn from(value: super::stream_response::EventData) -> Self {
-        //TODO option?
-        //TODO u32 or usize?
-        //TODO how to get usage out of claude
-        let mut id = String::new();
-        let mut model = String::new();
+#[derive(Debug, Clone, PartialEq)]
+struct EventDataParser {
+    id: String,
+    created_at: u64,
+    model: String,
+    response: OpenaiResponse,
+}
+
+impl EventDataParser {
+    pub fn new() -> Self {
         let created_at = {
             match SystemTime::now().duration_since(UNIX_EPOCH) {
                 Ok(n) => n.as_secs(),
                 Err(_) => 0,
             }
         };
-        match value {
-            EventData::Error(e) => {
-                tracing::error!("Error from Claude: {}", e);
-                Some(Chunk::Done)
+        Self {
+            id: String::new(),
+            created_at,
+            model: String::new(),
+            response: OpenaiResponse::default(),
+        }
+    }
+
+    pub fn parse_event_data_str(&mut self, d: &str) -> Result<Option<Chunk>> {
+        let payload = serde_json::from_str::<EventData>(d)?;
+        match payload {
+            EventData::Error { error: e } => {
+                anyhow::bail!("Error from Claude API: {}", e);
             }
             EventData::MessageStart { message } => {
-                id = message.id;
-                model = message.model;
-                Some(Chunk::Data(ChunkResponse {
-                    id,
-                    choices: get_choices(0, "", None),
-                    created: created_at,
-                    model,
+                self.id = message.id;
+                self.model = message.model;
+                let res = ChunkResponse {
+                    id: self.id.to_string(),
+                    choices: get_choices(0, "", Some(OpenaiRole::Assistant), None),
+                    created: self.created_at,
+                    model: self.model.to_string(),
                     system_fingerprint: None,
                     object: "chat.completion.chunk".to_string(),
-                    usage: None,
-                }))
+                };
+                Ok(Some(Chunk::Data(res)))
             }
-            EventData::Ping => None,
+            EventData::Ping => Ok(None),
             EventData::ContentBlockStart {
                 index,
                 content_block,
@@ -142,51 +157,46 @@ impl From<super::stream_response::EventData>
                     ContentBlock::Text { text } => text,
                     _ => "".to_string(),
                 };
-                Some(Chunk::Data(ChunkResponse {
-                    id,
-                    choices: get_choices(index as usize, &s, None),
-                    created: created_at,
-                    model,
+                Ok(Some(Chunk::Data(ChunkResponse {
+                    id: self.id.to_string(),
+                    choices: get_choices(index as usize, &s, None, None),
+                    created: self.created_at,
+                    model: self.model.to_string(),
                     system_fingerprint: None,
                     object: "chat.completion.chunk".to_string(),
-                    usage: None,
-                }))
+                })))
             }
             EventData::ContentBlockDelta { index, delta } => {
                 let s = match delta {
                     ContentBlock::TextDelta { text } => text,
                     _ => "".to_string(),
                 };
-                Some(Chunk::Data(ChunkResponse {
-                    id,
-                    choices: get_choices(index as usize, &s, None),
-                    created: created_at,
-                    model,
+                Ok(Some(Chunk::Data(ChunkResponse {
+                    id: self.id.to_string(),
+                    choices: get_choices(index as usize, &s, None, None),
+                    created: self.created_at,
+                    model: self.model.to_string(),
                     system_fingerprint: None,
                     object: "chat.completion.chunk".to_string(),
-                    usage: None,
-                }))
+                })))
             }
-            EventData::ContentBlockStop { index: _ } => None,
-            EventData::MessageDelta { delta, usage: _ } => Some(Chunk::Data(ChunkResponse {
-                id,
-                choices: get_choices(0, "", Some(delta.stop_reason.into())),
-                created: created_at,
-                model,
-                system_fingerprint: None,
-                object: "chat.completion.chunk".to_string(),
-                usage: None,
-            })),
-            EventData::MessageStop => Some(Chunk::Done),
+            EventData::ContentBlockStop { index: _ } => Ok(None),
+            EventData::MessageDelta { delta: _, usage: _ } => Ok(None),
+            EventData::MessageStop => Ok(Some(Chunk::Done)),
         }
     }
 }
 
-fn get_choices(index: usize, text: &str, finish_reason: Option<FinishReason>) -> Vec<Choice> {
+fn get_choices(
+    index: usize,
+    text: &str,
+    role: Option<OpenaiRole>,
+    finish_reason: Option<FinishReason>,
+) -> Vec<Choice> {
     vec![Choice {
         index,
         delta: DeltaMessage {
-            role: Some(OpenaiRole::Assistant),
+            role,
             content: Some(text.to_string()),
             ..Default::default()
         },
@@ -207,14 +217,21 @@ impl From<StopReason> for FinishReason {
 
 #[cfg(test)]
 mod tests {
-    use await_openai::entity::create_chat_completion::RequestBody;
+    use crate::entity::{
+        chat_completion_chunk::{Choice, Chunk, ChunkResponse, DeltaMessage},
+        chat_completion_object::Role as OpenaiRole,
+        create_chat_completion::{FinishReason, RequestBody},
+    };
 
-    use crate::messages::{
+    use anyhow::anyhow;
+    use async_claude::messages::{
         request::Request, ContentBlock, ImageSource, Message, MessageContent, Role,
     };
 
+    use super::EventDataParser;
+
     #[test]
-    fn serde() {
+    fn convert_request() {
         let tests = vec![
             (
                 "default",
@@ -259,6 +276,168 @@ mod tests {
             let parsed: RequestBody = serde_json::from_str(json).unwrap();
             let got: Request = parsed.into();
             assert_eq!(got, want, "deserialize test failed: {}", name);
+        }
+    }
+
+    #[test]
+    fn convert_stream_response() {
+        let tests = vec![
+            (
+                "error",
+                r#"{"type": "error", "error": {"type": "overloaded_error", "message": "Overloaded"}}"#,
+                None,
+                Some(anyhow!("an error")),
+            ),
+            (
+                "message_start",
+                r#"{"type":"message_start","message":{"id":"msg_019LBLYFJ7fG3fuAqzuRQbyi","type":"message","role":"assistant","content":[],"model":"claude-3-opus-20240229","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":10,"output_tokens":1}}}"#,
+                Some(Chunk::Data(ChunkResponse {
+                    id: "msg_019LBLYFJ7fG3fuAqzuRQbyi".to_string(),
+                    choices: vec![Choice {
+                        index: 0,
+                        delta: DeltaMessage {
+                            role: Some(OpenaiRole::Assistant),
+                            content: Some("".to_string()),
+                            ..Default::default()
+                        },
+                        finish_reason: None,
+                        ..Default::default()
+                    }],
+                    created: 0,
+                    model: "claude-3-opus-20240229".to_string(),
+                    system_fingerprint: None,
+                    object: "chat.completion.chunk".to_string(),
+                })),
+                None,
+            ),
+            (
+                "content_block_start",
+                r#"{"type": "content_block_start", "index":0, "content_block": {"type": "text", "text": ""}}"#,
+                Some(Chunk::Data(ChunkResponse {
+                    id: "msg_019LBLYFJ7fG3fuAqzuRQbyi".to_string(),
+                    choices: vec![Choice {
+                        index: 0,
+                        delta: DeltaMessage {
+                            role: Some(OpenaiRole::Assistant),
+                            content: Some("".to_string()),
+                            ..Default::default()
+                        },
+                        finish_reason: None,
+                        ..Default::default()
+                    }],
+                    created: 0,
+                    model: "claude-3-opus-20240229".to_string(),
+                    system_fingerprint: None,
+                    object: "chat.completion.chunk".to_string(),
+                })),
+                None,
+            ),
+            ("ping", r#"{"type": "ping"}"#, None, None),
+            (
+                "content_block_delta",
+                r#"{"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "Hello"}}"#,
+                Some(Chunk::Data(ChunkResponse {
+                    id: "msg_019LBLYFJ7fG3fuAqzuRQbyi".to_string(),
+                    choices: vec![Choice {
+                        index: 0,
+                        delta: DeltaMessage {
+                            role: Some(OpenaiRole::Assistant),
+                            content: Some("Hello".to_string()),
+                            ..Default::default()
+                        },
+                        finish_reason: None,
+                        ..Default::default()
+                    }],
+                    created: 0,
+                    model: "claude-3-opus-20240229".to_string(),
+                    system_fingerprint: None,
+                    object: "chat.completion.chunk".to_string(),
+                })),
+                None,
+            ),
+            (
+                "content_block_delta",
+                r#"{"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "!"}}"#,
+                Some(Chunk::Data(ChunkResponse {
+                    id: "msg_019LBLYFJ7fG3fuAqzuRQbyi".to_string(),
+                    choices: vec![Choice {
+                        index: 0,
+                        delta: DeltaMessage {
+                            role: Some(OpenaiRole::Assistant),
+                            content: Some("!".to_string()),
+                            ..Default::default()
+                        },
+                        finish_reason: None,
+                        ..Default::default()
+                    }],
+                    created: 0,
+                    model: "claude-3-opus-20240229".to_string(),
+                    system_fingerprint: None,
+                    object: "chat.completion.chunk".to_string(),
+                })),
+                None,
+            ),
+            (
+                "content_block_stop",
+                r#"{"type": "content_block_stop", "index": 0}"#,
+                None,
+                None,
+            ),
+            (
+                "message_delta",
+                r#"{"type": "message_delta", "delta": {"stop_reason": "end_turn", "stop_sequence":null, "usage":{"output_tokens": 15}}}"#,
+                None,
+                None,
+            ),
+            (
+                "message_stop",
+                r#"{"type": "message_stop"}"#,
+                Some(Chunk::Data(ChunkResponse {
+                    id: "msg_019LBLYFJ7fG3fuAqzuRQbyi".to_string(),
+                    choices: vec![Choice {
+                        index: 0,
+                        delta: DeltaMessage {
+                            role: Some(OpenaiRole::Assistant),
+                            content: Some("".to_string()),
+                            ..Default::default()
+                        },
+                        finish_reason: Some(FinishReason::Stop),
+                        ..Default::default()
+                    }],
+                    created: 0,
+                    model: "claude-3-opus-20240229".to_string(),
+                    system_fingerprint: None,
+                    object: "chat.completion.chunk".to_string(),
+                })),
+                None,
+            ),
+        ];
+        let mut parser = EventDataParser::new();
+        for (name, input, want, err) in tests {
+            let got = parser.parse_event_data_str(input);
+            if got.is_err() && err.is_none() {
+                panic!("unexpected error: {}", got.unwrap_err());
+            }
+            if got.is_err() && err.is_some() {
+                return;
+            }
+            match (got.unwrap(), want) {
+                (Some(Chunk::Data(g)), Some(Chunk::Data(w))) => {
+                    assert_eq!(g.id, w.id, "id mismatch: {}", name);
+                    assert_eq!(g.choices, w.choices, "choices mismatch: {}", name);
+                    assert_eq!(g.model, w.model, "model mismatch: {}", name);
+                    assert_eq!(
+                        g.system_fingerprint, w.system_fingerprint,
+                        "fingerprint mismatch: {}",
+                        name
+                    );
+                    assert_eq!(g.object, w.object, "object mismatch: {}", name);
+                }
+                (None, None) => {}
+                (_, _) => {
+                    assert_eq!("test failed: {}", name);
+                }
+            }
         }
     }
 }

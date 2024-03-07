@@ -4,7 +4,7 @@
 		"tool",
 		"models",
 		"util",
-		"openai"
+		"claude"
 	],
 	"rust-analyzer.linkedProjects": [
 		"await-openai/Cargo.toml",

@@ -12,6 +12,7 @@ use super::{response::Response, ContentBlock, StopReason, Usage};
 #[serde(rename_all = "snake_case")]
 pub enum EventName {
     Unspecified,
+    Error,
     MessageStart,
     ContentBlockStart,
     Ping,
@@ -25,6 +26,7 @@ impl FromStr for EventName {
     type Err = Infallible;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "error" => Ok(EventName::Error),
             "message_start" => Ok(EventName::MessageStart),
             "content_block_start" => Ok(EventName::ContentBlockStart),
             "ping" => Ok(EventName::Ping),
@@ -40,7 +42,9 @@ impl FromStr for EventName {
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum EventData {
-    Error(ErrorData),
+    Error {
+        error: ErrorData,
+    },
     MessageStart {
         message: Response,
     },
@@ -90,6 +94,16 @@ mod tests {
     #[test]
     fn serde() {
         let tests = vec![
+            (
+                "error",
+                r#"{"type": "error", "error": {"type": "overloaded_error", "message": "Overloaded"}}"#,
+                EventName::Error,
+                EventData::Error {
+                    error: ErrorData::OverloadedError {
+                        message: "Overloaded".to_string(),
+                    },
+                },
+            ),
             (
                 "message_start",
                 r#"{"type":"message_start","message":{"id":"msg_019LBLYFJ7fG3fuAqzuRQbyi","type":"message","role":"assistant","content":[],"model":"claude-3-opus-20240229","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":10,"output_tokens":1}}}"#,
