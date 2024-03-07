@@ -1,7 +1,4 @@
-use std::{
-    collections::VecDeque,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 
@@ -106,15 +103,15 @@ fn parse_mime_from_base64(s: &str) -> Option<String> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct EventDataParser {
+pub struct EventDataParser {
     id: String,
     created_at: u64,
     model: String,
     response: OpenaiResponse,
 }
 
-impl EventDataParser {
-    pub fn new() -> Self {
+impl Default for EventDataParser {
+    fn default() -> Self {
         let created_at = {
             match SystemTime::now().duration_since(UNIX_EPOCH) {
                 Ok(n) => n.as_secs(),
@@ -128,7 +125,9 @@ impl EventDataParser {
             response: OpenaiResponse::default(),
         }
     }
+}
 
+impl EventDataParser {
     pub fn parse_event_data_str(&mut self, d: &str) -> Result<Option<Chunk>> {
         let payload = serde_json::from_str::<EventData>(d)?;
         match payload {
@@ -412,7 +411,7 @@ mod tests {
                 None,
             ),
         ];
-        let mut parser = EventDataParser::new();
+        let mut parser = EventDataParser::default();
         for (name, input, want, err) in tests {
             let got = parser.parse_event_data_str(input);
             if got.is_err() && err.is_none() {
