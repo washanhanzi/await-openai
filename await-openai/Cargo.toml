@@ -6,7 +6,6 @@ edition = "2021"
 readme = "README.md"
 keywords = ["openai", "chatgpt"]
 license = "MIT"
-license-file = "LICENSE"
 homepage = "https://github.com/washanhanzi/await-openai"
 repository = "https://github.com/washanhanzi/await-openai"
 
@@ -19,7 +18,7 @@ tiktoken-rs = { version = "0", optional = true }
 anyhow = { version = "1", optional = true }
 schemars = { version = "0.8", optional = true }
 paste = { version = "1", optional = true }
-async-claude = { path = "../async-claude", optional = true }
+async-claude = { path = "../async-claude", version = "0.0.3", optional = true }
 tracing = { version = "0", optional = true }
 
 [dev-dependencies]

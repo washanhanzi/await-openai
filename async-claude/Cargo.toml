@@ -1,10 +1,9 @@
 [package]
 name = "async-claude"
 description = "utils for claude API"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 license = "MIT"
-license-file = "LICENSE"
 keywords = ["claude", "anthropic"]
 homepage = "https://github.com/washanhanzi/await-openai"
 repository = "https://github.com/washanhanzi/await-openai"
