@@ -27,6 +27,15 @@ impl FromStr for Chunk {
     }
 }
 
+impl Chunk {
+    pub fn try_to_string(&self) -> Result<String, serde_json::Error> {
+        match self {
+            Chunk::Done => Ok("[DONE]".to_string()),
+            Chunk::Data(response) => serde_json::to_string(response),
+        }
+    }
+}
+
 #[derive(Debug, Default, Deserialize, Clone, PartialEq, Serialize)]
 pub struct ChunkResponse {
     /// A unique identifier for the completion.
