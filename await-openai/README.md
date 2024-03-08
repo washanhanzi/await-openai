@@ -4,6 +4,8 @@ some code to work with openai, gemini and anthropic api.
 
 > [!WARNING]
 > not stable
+> use full version number as dependency
+> breaking change may happen in minor version until `1.0.0`
 
 - [await-openai](https://github.com/washanhanzi/await-openai/tree/main/await-openai)
 - [async-gemini](https://github.com/washanhanzi/await-openai/tree/main/async-gemini)

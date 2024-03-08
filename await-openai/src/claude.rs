@@ -108,6 +108,22 @@ fn parse_mime_from_base64(s: &str) -> Option<String> {
     }
 }
 
+/// EventDataParser can parse from the event data from Claude API to Openai API.
+/// It stores the intermidiate state of the parsing and can be used to generate Openai's unary response.
+/// It provide two methods to parse the event data, `parse_from_str` and `parse_from_value`.
+/// If you want to parse from a source I'm not aware of, use `parse_event_data` which accepts a reference to `EventData`.
+/// The parsed results may return `None`, if you want a 1:1 map of Claude's stream response data, map `None` to `get_default_chunk`.
+///
+/// # Example
+///
+/// ````
+/// use await_openai::claude::EventDataParser;
+///
+/// let mut parser = EventDataParser::default();
+/// let data = r#"{"type": "error", "error": {"type": "overloaded_error", "message": "Overloaded"}}"#;
+/// let event_data = parser.parse_from_str(data);
+/// assert_eq!(event_data.unwrap_err().to_string(), "Error from Claude API: OverloadedError: Overloaded");
+/// ````
 #[derive(Debug, Clone, PartialEq)]
 pub struct EventDataParser {
     id: String,
@@ -136,7 +152,7 @@ impl Default for EventDataParser {
 }
 
 impl EventDataParser {
-    pub fn get_chunk(&self) -> Chunk {
+    pub fn get_default_chunk(&self) -> Chunk {
         Chunk::Data(ChunkResponse {
             id: self.id.to_string(),
             choices: vec![],
@@ -173,45 +189,13 @@ impl EventDataParser {
         })
     }
 
-    pub fn parse_event_data(&mut self, d: &str) -> Result<Chunk> {
+    pub fn parse_from_str(&mut self, d: &str) -> Result<Option<Chunk>> {
         let payload = serde_json::from_str::<EventData>(d)?;
-        match payload {
-            EventData::Error { error: e } => {
-                anyhow::bail!("Error from Claude API: {}", e);
-            }
-            EventData::MessageStart { message } => {
-                self.id = message.id;
-                self.model = message.model;
-                self.usage.prompt_tokens = message.usage.input_tokens.unwrap_or_default();
-                self.usage.completion_tokens = message.usage.output_tokens;
-                Ok(self.get_chunk_with_choice(0, "", Some(OpenaiRole::Assistant), None))
-            }
-            EventData::Ping => Ok(self.get_chunk()),
-            EventData::ContentBlockStart {
-                index,
-                content_block,
-            } => {
-                let s = match content_block {
-                    ContentBlock::Text { text } => text,
-                    _ => "".to_string(),
-                };
-                Ok(self.get_chunk_with_choice(index as usize, &s, None, None))
-            }
-            EventData::ContentBlockDelta { index, delta } => {
-                let s = match delta {
-                    ContentBlock::TextDelta { text } => text,
-                    _ => "".to_string(),
-                };
-                self.contents.push_back(s.to_string());
-                Ok(self.get_chunk_with_choice(index as usize, &s, None, None))
-            }
-            EventData::ContentBlockStop { index: _ } => Ok(self.get_chunk()),
-            EventData::MessageDelta { delta: _, usage } => {
-                self.usage.completion_tokens += usage.output_tokens;
-                Ok(self.get_chunk())
-            }
-            EventData::MessageStop => Ok(Chunk::Done),
-        }
+        self.parse_event_data(&payload)
+    }
+    pub fn parse_from_value(&mut self, d: serde_json::Value) -> Result<Option<Chunk>> {
+        let payload = serde_json::from_value::<EventData>(d)?;
+        self.parse_event_data(&payload)
     }
 
     pub fn get_response(self) -> OpenaiResponse {
@@ -236,6 +220,61 @@ impl EventDataParser {
             created: self.created_at,
             system_fingerprint: None,
             object: "chat.completion".to_string(),
+        }
+    }
+
+    pub fn parse_event_data(&mut self, data: &EventData) -> Result<Option<Chunk>> {
+        match data {
+            EventData::Error { error: e } => {
+                anyhow::bail!("Error from Claude API: {}", e);
+            }
+            EventData::MessageStart { message } => {
+                self.id = message.id.to_string();
+                self.model = message.model.to_string();
+                self.usage.prompt_tokens = message.usage.input_tokens.unwrap_or_default();
+                self.usage.completion_tokens = message.usage.output_tokens;
+                Ok(Some(self.get_chunk_with_choice(
+                    0,
+                    "",
+                    Some(OpenaiRole::Assistant),
+                    None,
+                )))
+            }
+            EventData::Ping => Ok(None),
+            EventData::ContentBlockStart {
+                index,
+                content_block,
+            } => {
+                let s = match content_block {
+                    ContentBlock::Text { text } => text,
+                    _ => "",
+                };
+                Ok(Some(self.get_chunk_with_choice(
+                    *index as usize,
+                    s,
+                    None,
+                    None,
+                )))
+            }
+            EventData::ContentBlockDelta { index, delta } => {
+                let s = match delta {
+                    ContentBlock::TextDelta { text } => text,
+                    _ => "",
+                };
+                self.contents.push_back(s.to_string());
+                Ok(Some(self.get_chunk_with_choice(
+                    *index as usize,
+                    s,
+                    None,
+                    None,
+                )))
+            }
+            EventData::ContentBlockStop { index: _ } => Ok(None),
+            EventData::MessageDelta { delta: _, usage } => {
+                self.usage.completion_tokens += usage.output_tokens;
+                Ok(None)
+            }
+            EventData::MessageStop => Ok(Some(Chunk::Done)),
         }
     }
 }
@@ -469,7 +508,7 @@ mod tests {
         ];
         let mut parser = EventDataParser::default();
         for (name, input, want, err) in tests {
-            let got = parser.parse_event_data(input);
+            let got = parser.parse_from_str(input);
             if got.is_err() && err.is_none() {
                 panic!("unexpected error: {}", got.unwrap_err());
             }
@@ -477,7 +516,7 @@ mod tests {
                 return;
             }
             match (got.unwrap(), want) {
-                (Chunk::Data(g), Chunk::Data(w)) => {
+                (Some(Chunk::Data(g)), Chunk::Data(w)) => {
                     assert_eq!(g.id, w.id, "id mismatch: {}", name);
                     assert_eq!(g.choices, w.choices, "choices mismatch: {}", name);
                     assert_eq!(g.model, w.model, "model mismatch: {}", name);
@@ -488,7 +527,7 @@ mod tests {
                     );
                     assert_eq!(g.object, w.object, "object mismatch: {}", name);
                 }
-                (Chunk::Done, Chunk::Done) => {}
+                (Some(Chunk::Done), Chunk::Done) => {}
                 (_, _) => {
                     assert_eq!("test failed: {}", name);
                 }
