@@ -1,11 +1,13 @@
 # about this workspace
 
-some code to work with openai, gemini and anthropic api.
+ease your way to work with openai, gemini and anthropic api
 
 > [!WARNING]
-> not stable
-> use full version number as dependency
-> breaking change may happen in minor version until `1.0.0`
+> wip, not stable.
+>
+> use full version number as dependency.
+>
+> breaking change may happen in minor version update until `1.0.0`.
 
 - [await-openai](https://github.com/washanhanzi/await-openai/tree/main/await-openai)
 - [async-gemini](https://github.com/washanhanzi/await-openai/tree/main/async-gemini)
@@ -17,7 +19,6 @@ only support chat completion for now
 
 compare to [async-openai](https://github.com/64bit/async-openai)
 
-- tag enum variant
 - dedicate completion chunk type
 - only types
 
@@ -35,8 +36,9 @@ blazing fast serilization compared to [openai-func-enums](https://github.com/fra
 
 ### claude
 
-transform openai's request to anthropic's request
-transform authropic's response to openai's response
+transform openai's request to anthropic's request.
+
+transform authropic's response to openai's response.
 
 ## benchmark
 
@@ -52,12 +54,8 @@ transform authropic's response to openai's response
 
 # async-gemini
 
-work in progress
-
-[async-gemini](https://github.com/washanhanzi/await-openai/tree/main/async-gemini)
+- [async-gemini](https://github.com/washanhanzi/await-openai/tree/main/async-gemini)
 
 # async-claude
-
-work in progress
 
 - [async-claude](https://github.com/washanhanzi/await-openai/tree/main/async-claude)

@@ -18,12 +18,12 @@ pub fn get_function_tool<T: JsonSchema>(name: &str, desc: Option<String>) -> Res
     })
 }
 
-/// define_function_tool macro will create a static OnceLock<Tool> with the name <TOOL_NAME>_ONCE_LOCK
+/// define_function_tool macro will create a fuction get_{tool_name in lowercase}, the function return a static reference to the tool
 #[macro_export]
 macro_rules! define_function_tool {
     ($tool_name:ident, $function_name:expr, $description:expr, $param_type:ty) => {
         $crate::tool::paste::paste! {
-            static [<$tool_name _ONCE_LOCK>]: std::sync::OnceLock<$crate::entity::create_chat_completion::Tool> = std::sync::OnceLock::new();
+            static [<$tool_name _ONCE_LOCK>]: std::sync::OnceLock<$crate::entity::create_chat_completion::Tool> = ::std::sync::OnceLock::new();
 
             pub fn [<get_ $tool_name:lower>]() -> &'static $crate::entity::create_chat_completion::Tool {
                 [<$tool_name _ONCE_LOCK>].get_or_init(|| {
