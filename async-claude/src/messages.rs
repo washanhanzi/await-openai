@@ -15,6 +15,13 @@ pub struct Message {
     pub content: MessageContent,
 }
 
+impl Message {
+    //return true if text or all blocks are empty or only contain white spaces
+    pub fn is_all_empty(&self) -> bool {
+        self.content.is_all_empty()
+    }
+}
+
 #[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Role {
@@ -30,6 +37,25 @@ pub enum MessageContent {
     Blocks(Vec<ContentBlock>),
 }
 
+impl MessageContent {
+    pub fn is_all_empty(&self) -> bool {
+        match self {
+            MessageContent::Text(s) => s.trim().is_empty(),
+            MessageContent::Blocks(blocks) => {
+                if blocks.is_empty() {
+                    return true;
+                }
+                for block in blocks {
+                    if !block.is_empty() {
+                        return false;
+                    }
+                }
+                true
+            }
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
 #[serde(tag = "type")]
 pub enum ContentBlock {
@@ -39,6 +65,20 @@ pub enum ContentBlock {
     Image { source: ImageSource },
     #[serde(rename = "text_delta")]
     TextDelta { text: String },
+}
+
+impl ContentBlock {
+    pub fn is_empty(&self) -> bool {
+        match self {
+            ContentBlock::Text { text } => text.trim().is_empty(),
+            ContentBlock::Image { source } => match source {
+                ImageSource::Base64 { media_type, data } => {
+                    media_type.trim().is_empty() || data.trim().is_empty()
+                }
+            },
+            ContentBlock::TextDelta { text } => text.trim().is_empty(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]

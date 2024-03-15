@@ -193,6 +193,7 @@ impl EventDataParser {
         let payload = serde_json::from_str::<EventData>(d)?;
         self.parse_event_data(&payload)
     }
+
     pub fn parse_from_value(&mut self, d: serde_json::Value) -> Result<Option<Chunk>> {
         let payload = serde_json::from_value::<EventData>(d)?;
         self.parse_event_data(&payload)
