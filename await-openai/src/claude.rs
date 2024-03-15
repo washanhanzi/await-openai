@@ -203,16 +203,18 @@ impl EventDataParser {
         OpenaiResponse {
             id: self.id,
             model: self.model,
-            choices: vec![OpenaiChoice {
-                index: 0,
-                message: OpenaiResponseMessage {
-                    role: OpenaiRole::Assistant,
-                    content: Some(self.contents.into_iter().collect::<Vec<String>>().join("")),
+            choices: vec![
+                OpenaiChoice {
+                    index: 0,
+                    message: OpenaiResponseMessage {
+                        role: OpenaiRole::Assistant,
+                        content: Some(self.contents.into_iter().collect::<Vec<String>>().join("")),
+                        ..Default::default()
+                    },
+                    finish_reason: Some(FinishReason::Stop),
                     ..Default::default()
                 },
-                finish_reason: Some(FinishReason::Stop),
-                ..Default::default()
-            }],
+            ],
             usage: OpenaiUsage {
                 prompt_tokens: self.usage.prompt_tokens,
                 completion_tokens: self.usage.completion_tokens,
@@ -537,16 +539,18 @@ mod tests {
         let got_res = parser.get_response();
         let want_res = OpenaiResponse {
             id: "msg_019LBLYFJ7fG3fuAqzuRQbyi".to_string(),
-            choices: vec![OpenaiResponseChoice {
-                index: 0,
-                message: OpenaiMessage {
-                    role: OpenaiRole::Assistant,
-                    content: Some("Hello!".to_string()),
+            choices: vec![
+                OpenaiResponseChoice {
+                    index: 0,
+                    message: OpenaiMessage {
+                        role: OpenaiRole::Assistant,
+                        content: Some("Hello!".to_string()),
+                        ..Default::default()
+                    },
+                    finish_reason: None,
                     ..Default::default()
                 },
-                finish_reason: None,
-                ..Default::default()
-            }],
+            ],
             created: 0,
             model: "claude-3-opus-20240229".to_string(),
             system_fingerprint: None,
