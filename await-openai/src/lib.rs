@@ -8,3 +8,5 @@ pub mod tool;
 
 #[cfg(feature = "claude")]
 pub mod claude;
+
+pub mod magi;

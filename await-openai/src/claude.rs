@@ -1,20 +1,21 @@
-use std::{
-    collections::VecDeque,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 
-use crate::entity::{
-    chat_completion_chunk::{Choice, Chunk, ChunkResponse, DeltaMessage},
-    chat_completion_object::{
-        Choice as OpenaiChoice, Message as OpenaiResponseMessage, Response as OpenaiResponse,
-        Role as OpenaiRole, Usage as OpenaiUsage,
+use crate::{
+    entity::{
+        chat_completion_chunk::{
+            Choice, Chunk, ChunkResponse, DeltaMessage, OpenaiEventDataParser,
+        },
+        chat_completion_object::{
+            Response as OpenaiResponse, Role as OpenaiRole, Usage as OpenaiUsage,
+        },
+        create_chat_completion::{
+            Content, ContentPart, FinishReason, Message as OpenaiMessage,
+            RequestBody as OpenaiRequestBody, Stop,
+        },
     },
-    create_chat_completion::{
-        Content, ContentPart, FinishReason, Message as OpenaiMessage,
-        RequestBody as OpenaiRequestBody, Stop,
-    },
+    magi::EventDataParser,
 };
 
 pub use async_claude::messages::*;
@@ -108,32 +109,29 @@ fn parse_mime_from_base64(s: &str) -> Option<String> {
     }
 }
 
-/// EventDataParser can parse from the event data from Claude API to Openai API.
-/// It stores the intermidiate state of the parsing and can be used to generate Openai's unary response.
-/// It provide two methods to parse the event data, `parse_from_str` and `parse_from_value`.
-/// If you want to parse from a source I'm not aware of, use `parse_event_data` which accepts a reference to `EventData`.
+/// ClaudeEventDataParser can convert event data from Claude API to Openai API.
+/// It stores the intermidiate state of the parsing result and can be used to generate Openai's unary response.
+/// It provide two methods to parse the event data, `parse_str` and `parse_value`.
+/// If you want to parse from a source I'm not aware of, use `parse_to_openai_event_data` which accepts a reference to `EventData`.
 /// The parsed results may return `None`, if you want a 1:1 map of Claude's stream response data, map `None` to `get_default_chunk`.
 ///
 /// # Example
 ///
 /// ````
-/// use await_openai::claude::EventDataParser;
+/// use await_openai::claude::ClaudeEventDataParser;
 ///
-/// let mut parser = EventDataParser::default();
+/// let mut parser = ClaudeEventDataParser::default();
 /// let data = r#"{"type": "error", "error": {"type": "overloaded_error", "message": "Overloaded"}}"#;
-/// let event_data = parser.parse_from_str(data);
+/// let event_data = parser.parse_str(data);
 /// assert_eq!(event_data.unwrap_err().to_string(), "Error from Claude API: OverloadedError: Overloaded");
 /// ````
 #[derive(Debug, Clone, PartialEq)]
-pub struct EventDataParser {
-    id: String,
-    created_at: u64,
-    model: String,
+pub struct ClaudeEventDataParser {
     usage: OpenaiUsage,
-    contents: VecDeque<String>,
+    parser: OpenaiEventDataParser,
 }
 
-impl Default for EventDataParser {
+impl Default for ClaudeEventDataParser {
     fn default() -> Self {
         let created_at = {
             match SystemTime::now().duration_since(UNIX_EPOCH) {
@@ -141,23 +139,45 @@ impl Default for EventDataParser {
                 Err(_) => 0,
             }
         };
+        let mut parser = OpenaiEventDataParser::default();
+        parser.created = created_at;
         Self {
-            id: String::new(),
-            created_at,
-            model: String::new(),
-            contents: VecDeque::new(),
             usage: OpenaiUsage::default(),
+            parser: OpenaiEventDataParser::default(),
         }
     }
 }
 
-impl EventDataParser {
+impl EventDataParser<EventData, Chunk, OpenaiResponse> for ClaudeEventDataParser {
+    //claude api won't return tool_call infomation for now, parse_data always return none
+    fn parse_data(&mut self, data: &EventData) -> Option<Chunk> {
+        let data = self.parse_to_openai_event_data(data);
+        match data {
+            Ok(Some(_)) => None,
+            Ok(None) => None,
+            Err(_) => None,
+        }
+    }
+
+    fn get_response(mut self) -> OpenaiResponse {
+        self.parser.object = "chat.completion".to_string();
+        let mut res = self.parser.get_response();
+        res.usage = OpenaiUsage {
+            prompt_tokens: self.usage.prompt_tokens,
+            completion_tokens: self.usage.completion_tokens,
+            total_tokens: self.usage.prompt_tokens + self.usage.completion_tokens,
+        };
+        res
+    }
+}
+
+impl ClaudeEventDataParser {
     pub fn get_default_chunk(&self) -> Chunk {
         Chunk::Data(ChunkResponse {
-            id: self.id.to_string(),
+            id: self.parser.id.to_string(),
             choices: vec![],
-            created: self.created_at,
-            model: self.model.to_string(),
+            created: self.parser.created,
+            model: self.parser.model.to_string(),
             system_fingerprint: None,
             object: "chat.completion.chunk".to_string(),
         })
@@ -171,7 +191,7 @@ impl EventDataParser {
         finish_reason: Option<FinishReason>,
     ) -> Chunk {
         Chunk::Data(ChunkResponse {
-            id: self.id.to_string(),
+            id: self.parser.id.to_string(),
             choices: vec![Choice {
                 index,
                 delta: DeltaMessage {
@@ -182,58 +202,39 @@ impl EventDataParser {
                 finish_reason,
                 ..Default::default()
             }],
-            created: self.created_at,
-            model: self.model.to_string(),
+            created: self.parser.created,
+            model: self.parser.model.to_string(),
             system_fingerprint: None,
             object: "chat.completion.chunk".to_string(),
         })
     }
 
-    pub fn parse_from_str(&mut self, d: &str) -> Result<Option<Chunk>> {
+    pub fn get_event_data_from_str(d: &str) -> Result<EventData, serde_json::Error> {
+        serde_json::from_str::<EventData>(d)
+    }
+
+    pub fn get_event_data_from_value(d: serde_json::Value) -> Result<EventData, serde_json::Error> {
+        serde_json::from_value::<EventData>(d)
+    }
+
+    pub fn parse_str(&mut self, d: &str) -> Result<Option<Chunk>> {
         let payload = serde_json::from_str::<EventData>(d)?;
-        self.parse_event_data(&payload)
+        self.parse_to_openai_event_data(&payload)
     }
 
-    pub fn parse_from_value(&mut self, d: serde_json::Value) -> Result<Option<Chunk>> {
+    pub fn parse_value(&mut self, d: serde_json::Value) -> Result<Option<Chunk>> {
         let payload = serde_json::from_value::<EventData>(d)?;
-        self.parse_event_data(&payload)
+        self.parse_to_openai_event_data(&payload)
     }
 
-    pub fn get_response(self) -> OpenaiResponse {
-        OpenaiResponse {
-            id: self.id,
-            model: self.model,
-            choices: vec![
-                OpenaiChoice {
-                    index: 0,
-                    message: OpenaiResponseMessage {
-                        role: OpenaiRole::Assistant,
-                        content: Some(self.contents.into_iter().collect::<Vec<String>>().join("")),
-                        ..Default::default()
-                    },
-                    finish_reason: Some(FinishReason::Stop),
-                    ..Default::default()
-                },
-            ],
-            usage: OpenaiUsage {
-                prompt_tokens: self.usage.prompt_tokens,
-                completion_tokens: self.usage.completion_tokens,
-                total_tokens: self.usage.prompt_tokens + self.usage.completion_tokens,
-            },
-            created: self.created_at,
-            system_fingerprint: None,
-            object: "chat.completion".to_string(),
-        }
-    }
-
-    pub fn parse_event_data(&mut self, data: &EventData) -> Result<Option<Chunk>> {
+    pub fn parse_to_openai_event_data(&mut self, data: &EventData) -> Result<Option<Chunk>> {
         match data {
             EventData::Error { error: e } => {
                 anyhow::bail!("Error from Claude API: {}", e);
             }
             EventData::MessageStart { message } => {
-                self.id = message.id.to_string();
-                self.model = message.model.to_string();
+                self.parser.update_id_if_empty(&message.id);
+                self.parser.update_model_if_empty(&message.model);
                 self.usage.prompt_tokens = message.usage.input_tokens.unwrap_or_default();
                 self.usage.completion_tokens = message.usage.output_tokens;
                 Ok(Some(self.get_chunk_with_choice(
@@ -264,7 +265,7 @@ impl EventDataParser {
                     ContentBlock::TextDelta { text } => text,
                     _ => "",
                 };
-                self.contents.push_back(s.to_string());
+                self.parser.push_content(s);
                 Ok(Some(self.get_chunk_with_choice(
                     *index as usize,
                     s,
@@ -294,13 +295,16 @@ impl From<StopReason> for FinishReason {
 
 #[cfg(test)]
 mod tests {
-    use crate::entity::{
-        chat_completion_chunk::{Choice, Chunk, ChunkResponse, DeltaMessage},
-        chat_completion_object::{
-            Choice as OpenaiResponseChoice, Message as OpenaiMessage, Response as OpenaiResponse,
-            Role as OpenaiRole, Usage,
+    use crate::{
+        entity::{
+            chat_completion_chunk::{Choice, Chunk, ChunkResponse, DeltaMessage},
+            chat_completion_object::{
+                Choice as OpenaiResponseChoice, Message as OpenaiMessage,
+                Response as OpenaiResponse, Role as OpenaiRole, Usage,
+            },
+            create_chat_completion::RequestBody,
         },
-        create_chat_completion::RequestBody,
+        magi::EventDataParser,
     };
 
     use anyhow::anyhow;
@@ -308,7 +312,7 @@ mod tests {
         request::Request, ContentBlock, ImageSource, Message, MessageContent, Role,
     };
 
-    use super::EventDataParser;
+    use super::ClaudeEventDataParser;
 
     #[test]
     fn convert_request() {
@@ -509,9 +513,9 @@ mod tests {
                 None,
             ),
         ];
-        let mut parser = EventDataParser::default();
+        let mut parser = ClaudeEventDataParser::default();
         for (name, input, want, err) in tests {
-            let got = parser.parse_from_str(input);
+            let got = parser.parse_str(input);
             if got.is_err() && err.is_none() {
                 panic!("unexpected error: {}", got.unwrap_err());
             }
@@ -535,6 +539,10 @@ mod tests {
                     assert_eq!("test failed: {}", name);
                 }
             }
+
+            //parser test
+            let event_data = ClaudeEventDataParser::get_event_data_from_str(input);
+            assert_eq!(parser.parse_data(event_data.as_ref().unwrap()), None);
         }
         let got_res = parser.get_response();
         let want_res = OpenaiResponse {
