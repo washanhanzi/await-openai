@@ -153,6 +153,7 @@ impl EventDataParser<EventData, Chunk, OpenaiResponse> for ClaudeEventDataParser
     fn parse_data(&mut self, data: &EventData) -> Option<Chunk> {
         let data = self.parse_to_openai_event_data(data);
         match data {
+            Ok(Some(Chunk::Done)) => Some(Chunk::Done),
             Ok(Some(_)) => None,
             Ok(None) => None,
             Err(_) => None,
