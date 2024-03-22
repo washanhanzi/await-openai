@@ -148,21 +148,18 @@ impl Default for ClaudeEventDataParser {
     }
 }
 
-impl EventDataParser<EventData, Chunk, OpenaiResponse> for ClaudeEventDataParser {
+impl EventDataParser<Chunk, Chunk, OpenaiResponse> for ClaudeEventDataParser {
     //claude api won't return tool_call infomation for now, parse_data always return none
-    fn parse_data(&mut self, data: &EventData) -> Option<Chunk> {
-        let data = self.parse_to_openai_event_data(data);
+    fn parse_data(&mut self, data: &Chunk) -> Option<Chunk> {
         match data {
-            Ok(Some(Chunk::Done)) => Some(Chunk::Done),
-            Ok(Some(_)) => None,
-            Ok(None) => None,
-            Err(_) => None,
+            Chunk::Done => Some(Chunk::Done),
+            _ => None,
         }
     }
 
-    fn get_response(mut self) -> OpenaiResponse {
+    fn response(mut self) -> OpenaiResponse {
         self.parser.object = "chat.completion".to_string();
-        let mut res = self.parser.get_response();
+        let mut res = self.parser.response();
         res.usage = OpenaiUsage {
             prompt_tokens: self.usage.prompt_tokens,
             completion_tokens: self.usage.completion_tokens,
@@ -173,7 +170,7 @@ impl EventDataParser<EventData, Chunk, OpenaiResponse> for ClaudeEventDataParser
 }
 
 impl ClaudeEventDataParser {
-    pub fn get_default_chunk(&self) -> Chunk {
+    pub fn default_chunk(&self) -> Chunk {
         Chunk::Data(ChunkResponse {
             id: self.parser.id.to_string(),
             choices: vec![],
@@ -184,7 +181,7 @@ impl ClaudeEventDataParser {
         })
     }
 
-    pub fn get_chunk_with_choice(
+    pub fn chunk_with_choice(
         &self,
         index: usize,
         text: &str,
@@ -210,25 +207,17 @@ impl ClaudeEventDataParser {
         })
     }
 
-    pub fn get_event_data_from_str(d: &str) -> Result<EventData, serde_json::Error> {
-        serde_json::from_str::<EventData>(d)
-    }
-
-    pub fn get_event_data_from_value(d: serde_json::Value) -> Result<EventData, serde_json::Error> {
-        serde_json::from_value::<EventData>(d)
-    }
-
     pub fn parse_str(&mut self, d: &str) -> Result<Option<Chunk>> {
         let payload = serde_json::from_str::<EventData>(d)?;
-        self.parse_to_openai_event_data(&payload)
+        self.openai_event_data(&payload)
     }
 
     pub fn parse_value(&mut self, d: serde_json::Value) -> Result<Option<Chunk>> {
         let payload = serde_json::from_value::<EventData>(d)?;
-        self.parse_to_openai_event_data(&payload)
+        self.openai_event_data(&payload)
     }
 
-    pub fn parse_to_openai_event_data(&mut self, data: &EventData) -> Result<Option<Chunk>> {
+    pub fn openai_event_data(&mut self, data: &EventData) -> Result<Option<Chunk>> {
         match data {
             EventData::Error { error: e } => {
                 anyhow::bail!("Error from Claude API: {}", e);
@@ -238,7 +227,7 @@ impl ClaudeEventDataParser {
                 self.parser.update_model_if_empty(&message.model);
                 self.usage.prompt_tokens = message.usage.input_tokens.unwrap_or_default();
                 self.usage.completion_tokens = message.usage.output_tokens;
-                Ok(Some(self.get_chunk_with_choice(
+                Ok(Some(self.chunk_with_choice(
                     0,
                     "",
                     Some(OpenaiRole::Assistant),
@@ -254,12 +243,7 @@ impl ClaudeEventDataParser {
                     ContentBlock::Text { text } => text,
                     _ => "",
                 };
-                Ok(Some(self.get_chunk_with_choice(
-                    *index as usize,
-                    s,
-                    None,
-                    None,
-                )))
+                Ok(Some(self.chunk_with_choice(*index as usize, s, None, None)))
             }
             EventData::ContentBlockDelta { index, delta } => {
                 let s = match delta {
@@ -267,12 +251,7 @@ impl ClaudeEventDataParser {
                     _ => "",
                 };
                 self.parser.push_content(s);
-                Ok(Some(self.get_chunk_with_choice(
-                    *index as usize,
-                    s,
-                    None,
-                    None,
-                )))
+                Ok(Some(self.chunk_with_choice(*index as usize, s, None, None)))
             }
             EventData::ContentBlockStop { index: _ } => Ok(None),
             EventData::MessageDelta { delta: _, usage } => {
@@ -536,16 +515,24 @@ mod tests {
                     assert_eq!(g.object, w.object, "object mismatch: {}", name);
                 }
                 (Some(Chunk::Done), Chunk::Done) => {}
+                (Some(d), w) => {
+                    //parser test
+                    let event_data = parser.parse_data(&d);
+                    if w == Chunk::Done {
+                        assert_eq!(
+                            parser.parse_data(event_data.as_ref().unwrap()),
+                            Some(Chunk::Done)
+                        );
+                    } else {
+                        assert_eq!(parser.parse_data(event_data.as_ref().unwrap()), None);
+                    }
+                }
                 (_, _) => {
                     assert_eq!("test failed: {}", name);
                 }
             }
-
-            //parser test
-            let event_data = ClaudeEventDataParser::get_event_data_from_str(input);
-            assert_eq!(parser.parse_data(event_data.as_ref().unwrap()), None);
         }
-        let got_res = parser.get_response();
+        let got_res = parser.response();
         let want_res = OpenaiResponse {
             id: "msg_019LBLYFJ7fG3fuAqzuRQbyi".to_string(),
             choices: vec![

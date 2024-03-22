@@ -1,7 +1,7 @@
 [package]
 name = "await-openai"
 description = "utils for openai"
-version = "0.11.0"
+version = "0.12.0"
 edition = "2021"
 readme = "README.md"
 keywords = ["openai", "chatgpt"]

@@ -114,7 +114,7 @@ impl TokenCounter {
 /// For context, see [generating TypeScript definitions](https://community.openai.com/t/how-to-calculate-the-tokens-when-using-function-call/266573/6) as an example.
 /// Given the absence of an official method and unreliable results of the above method got from other than get_current_weather example,
 /// this implementation adopts a more efficient approach to estimate token usage, potentially sacrificing some degree of accuracy for improved performance and simplicity.
-/// You can check the test cases for the estimated and actual token usage.
+/// You can check the test cases for the estimated and actual token usage. run `cargo test --features tiktoken`.
 ///
 /// [`AssistantMessage`]: crate::entity::create_chat_completion::AssistantMessage
 pub fn get_prompt_tokens(model: &str, messages: &[Message], tools: Option<&[Tool]>) -> Result<u32> {
@@ -200,12 +200,12 @@ mod tests {
 
     #[test]
     fn test_estimate_get_weather_example() {
-        let messages = vec![Message::User(
-            crate::entity::create_chat_completion::UserMessage {
+        let messages = vec![
+            Message::User(crate::entity::create_chat_completion::UserMessage {
                 name: None,
                 content: Content::Text("hi, how is the weather in San Francisco, CA".to_string()),
-            },
-        )];
+            }),
+        ];
         let tools = vec![Tool {
             r#type: ToolType::Function,
             function: FunctionTool {
@@ -234,12 +234,12 @@ mod tests {
 
     #[test]
     fn test_estimate_tool_with_one_param() {
-        let messages = vec![Message::User(
-            crate::entity::create_chat_completion::UserMessage {
+        let messages = vec![
+            Message::User(crate::entity::create_chat_completion::UserMessage {
                 name: None,
                 content: Content::Text("hi, how is the weather in San Francisco, CA".to_string()),
-            },
-        )];
+            }),
+        ];
         let tools = vec![Tool {
             r#type: ToolType::Function,
             function: FunctionTool {
@@ -263,12 +263,12 @@ mod tests {
 
     #[test]
     fn test_estimate_tool_with_three_params() {
-        let messages = vec![Message::User(
-            crate::entity::create_chat_completion::UserMessage {
+        let messages = vec![
+            Message::User(crate::entity::create_chat_completion::UserMessage {
                 name: None,
                 content: Content::Text("hi, how is the weather in San Francisco, CA".to_string()),
-            },
-        )];
+            }),
+        ];
         let tools = vec![Tool {
             r#type: ToolType::Function,
             function: FunctionTool {
@@ -300,14 +300,14 @@ mod tests {
 
     #[test]
     fn test_estimate_two_tools() {
-        let messages = vec![Message::User(
-            crate::entity::create_chat_completion::UserMessage {
+        let messages = vec![
+            Message::User(crate::entity::create_chat_completion::UserMessage {
                 name: None,
                 content: Content::Text(
                     "get current traffic and current weather for San Francisco".to_string(),
                 ),
-            },
-        )];
+            }),
+        ];
         let tools = vec![Tool {
             r#type: ToolType::Function,
             function: FunctionTool {

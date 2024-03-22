@@ -145,7 +145,7 @@ impl EventDataParser<Chunk, Chunk, Response> for OpenaiEventDataParser {
         }
     }
 
-    fn get_response(self) -> Response {
+    fn response(self) -> Response {
         let mut m = Message {
             role: Role::Assistant,
             ..Default::default()
@@ -573,7 +573,7 @@ mod tests {
                 .unwrap();
             assert_eq!(got, want, "test_parser failed: {}", name);
         }
-        let res = parser.get_response();
+        let res = parser.response();
         assert_eq!(
             res,
             Response {
@@ -818,7 +818,7 @@ mod tests {
                 .unwrap();
             assert_eq!(got, want, "test_parser failed: {}", name);
         }
-        let res = parser.get_response();
+        let res = parser.response();
         let want_res= Response {
             id: "chatcmpl-94JCcQJ9TY5hHx1el8uXAzojc511L".to_string(),
             object: "chat.completion.chunk".to_string(),
