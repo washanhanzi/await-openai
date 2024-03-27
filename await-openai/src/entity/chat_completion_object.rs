@@ -114,11 +114,11 @@ pub struct TopLogprobs {
 #[derive(Debug, Deserialize, Serialize, Default, Clone, PartialEq)]
 pub struct Usage {
     /// Number of tokens in the prompt.
-    pub prompt_tokens: u32,
+    pub prompt_tokens: usize,
     /// Number of tokens in the generated completion.
-    pub completion_tokens: u32,
+    pub completion_tokens: usize,
     /// Total number of tokens used in the request (prompt + completion).
-    pub total_tokens: u32,
+    pub total_tokens: usize,
 }
 
 #[cfg(test)]
@@ -222,13 +222,15 @@ mod tests {
                         message: Message {
                             role: Role::Assistant,
                             content: None,
-                            tool_calls: Some(vec![ToolCall::Function(ToolCallFunction {
-                                id: "call_abc123".to_string(),
-                                function: ToolCallFunctionObj {
-                                    name: "get_current_weather".to_string(),
-                                    arguments: "{\n\"location\": \"Boston, MA\"\n}".to_string(),
-                                },
-                            })]),
+                            tool_calls: Some(vec![
+                                ToolCall::Function(ToolCallFunction {
+                                    id: "call_abc123".to_string(),
+                                    function: ToolCallFunctionObj {
+                                        name: "get_current_weather".to_string(),
+                                        arguments: "{\n\"location\": \"Boston, MA\"\n}".to_string(),
+                                    },
+                                }),
+                            ]),
                         },
                         logprobs: None,
                         finish_reason: Some(FinishReason::ToolCalls),
@@ -445,12 +447,16 @@ mod tests {
                                 LogprobContent {
                                     token: "Hello".to_string(),
                                     logprob: -0.31725305,
-                                    bytes: Some(vec![72, 101, 108, 108, 111]),
+                                    bytes: Some(vec![
+                                        72, 101, 108, 108, 111,
+                                    ]),
                                     top_logprobs: vec![
                                         TopLogprobs {
                                             token: "Hello".to_string(),
                                             logprob: -0.31725305,
-                                            bytes: Some(vec![72, 101, 108, 108, 111]),
+                                            bytes: Some(vec![
+                                                72, 101, 108, 108, 111,
+                                            ]),
                                         },
                                         TopLogprobs {
                                             token: "Hi".to_string(),
@@ -472,19 +478,25 @@ mod tests {
                                         TopLogprobs {
                                             token: " there".to_string(),
                                             logprob: -3.787621,
-                                            bytes: Some(vec![32, 116, 104, 101, 114, 101]),
+                                            bytes: Some(vec![
+                                                32, 116, 104, 101, 114, 101,
+                                            ]),
                                         },
                                     ],
                                 },
                                 LogprobContent {
                                     token: " How".to_string(),
                                     logprob: -0.000054669687,
-                                    bytes: Some(vec![32, 72, 111, 119]),
+                                    bytes: Some(vec![
+                                        32, 72, 111, 119,
+                                    ]),
                                     top_logprobs: vec![
                                         TopLogprobs {
                                             token: " How".to_string(),
                                             logprob: -0.000054669687,
-                                            bytes: Some(vec![32, 72, 111, 119]),
+                                            bytes: Some(vec![
+                                                32, 72, 111, 119,
+                                            ]),
                                         },
                                         TopLogprobs {
                                             token: "<|end|>".to_string(),
@@ -496,17 +508,23 @@ mod tests {
                                 LogprobContent {
                                     token: " can".to_string(),
                                     logprob: -0.015801601,
-                                    bytes: Some(vec![32, 99, 97, 110]),
+                                    bytes: Some(vec![
+                                        32, 99, 97, 110,
+                                    ]),
                                     top_logprobs: vec![
                                         TopLogprobs {
                                             token: " can".to_string(),
                                             logprob: -0.015801601,
-                                            bytes: Some(vec![32, 99, 97, 110]),
+                                            bytes: Some(vec![
+                                                32, 99, 97, 110,
+                                            ]),
                                         },
                                         TopLogprobs {
                                             token: " may".to_string(),
                                             logprob: -4.161023,
-                                            bytes: Some(vec![32, 109, 97, 121]),
+                                            bytes: Some(vec![
+                                                32, 109, 97, 121,
+                                            ]),
                                         },
                                     ],
                                 },
@@ -523,53 +541,71 @@ mod tests {
                                         TopLogprobs {
                                             token: " assist".to_string(),
                                             logprob: -13.596657,
-                                            bytes: Some(vec![32, 97, 115, 115, 105, 115, 116]),
+                                            bytes: Some(vec![
+                                                32, 97, 115, 115, 105, 115, 116,
+                                            ]),
                                         },
                                     ],
                                 },
                                 LogprobContent {
                                     token: " assist".to_string(),
                                     logprob: -0.04571125,
-                                    bytes: Some(vec![32, 97, 115, 115, 105, 115, 116]),
+                                    bytes: Some(vec![
+                                        32, 97, 115, 115, 105, 115, 116,
+                                    ]),
                                     top_logprobs: vec![
                                         TopLogprobs {
                                             token: " assist".to_string(),
                                             logprob: -0.04571125,
-                                            bytes: Some(vec![32, 97, 115, 115, 105, 115, 116]),
+                                            bytes: Some(vec![
+                                                32, 97, 115, 115, 105, 115, 116,
+                                            ]),
                                         },
                                         TopLogprobs {
                                             token: " help".to_string(),
                                             logprob: -3.1089056,
-                                            bytes: Some(vec![32, 104, 101, 108, 112]),
+                                            bytes: Some(vec![
+                                                32, 104, 101, 108, 112,
+                                            ]),
                                         },
                                     ],
                                 },
                                 LogprobContent {
                                     token: " you".to_string(),
                                     logprob: -5.4385737e-6,
-                                    bytes: Some(vec![32, 121, 111, 117]),
+                                    bytes: Some(vec![
+                                        32, 121, 111, 117,
+                                    ]),
                                     top_logprobs: vec![
                                         TopLogprobs {
                                             token: " you".to_string(),
                                             logprob: -5.4385737e-6,
-                                            bytes: Some(vec![32, 121, 111, 117]),
+                                            bytes: Some(vec![
+                                                32, 121, 111, 117,
+                                            ]),
                                         },
                                         TopLogprobs {
                                             token: " today".to_string(),
                                             logprob: -12.807695,
-                                            bytes: Some(vec![32, 116, 111, 100, 97, 121]),
+                                            bytes: Some(vec![
+                                                32, 116, 111, 100, 97, 121,
+                                            ]),
                                         },
                                     ],
                                 },
                                 LogprobContent {
                                     token: " today".to_string(),
                                     logprob: -0.0040071653,
-                                    bytes: Some(vec![32, 116, 111, 100, 97, 121]),
+                                    bytes: Some(vec![
+                                        32, 116, 111, 100, 97, 121,
+                                    ]),
                                     top_logprobs: vec![
                                         TopLogprobs {
                                             token: " today".to_string(),
                                             logprob: -0.0040071653,
-                                            bytes: Some(vec![32, 116, 111, 100, 97, 121]),
+                                            bytes: Some(vec![
+                                                32, 116, 111, 100, 97, 121,
+                                            ]),
                                         },
                                         TopLogprobs {
                                             token: "?".to_string(),
