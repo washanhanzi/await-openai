@@ -29,7 +29,7 @@ impl From<OpenaiRequestBody> for Request {
             top_p: body.top_p,
             ..Default::default()
         };
-        let mut messages = vec![];
+        let mut messages = Vec::with_capacity(body.messages.len());
         let mut system_message = None;
         for message in body.messages {
             match message {
@@ -88,7 +88,7 @@ impl From<OpenaiRequestBody> for Request {
         if let Some(stop) = body.stop {
             match stop {
                 Stop::String(s) => res.stop_sequences = Some(vec![s]),
-                Stop::StringArray(ss) => res.stop_sequences = Some(ss),
+                Stop::Array(ss) => res.stop_sequences = Some(ss),
             }
         }
         res

@@ -38,7 +38,7 @@ pub struct RequestBody {
     ///
     /// The total length of input tokens and generated tokens is limited by the model's context length. [Example Python code](https://cookbook.openai.com/examples/how_to_count_tokens_with_tiktoken) for counting tokens.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_tokens: Option<u32>,
+    pub max_tokens: Option<usize>,
 
     /// How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Keep `n` as `1` to minimize costs.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -106,8 +106,8 @@ pub struct RequestBody {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum Stop {
-    String(String),           // nullable: true
-    StringArray(Vec<String>), // minItems: 1; maxItems: 4
+    String(String),
+    Array(Vec<String>), // minItems: 1; maxItems: 4
 }
 
 #[derive(Clone, Serialize, Debug, Deserialize, PartialEq)]

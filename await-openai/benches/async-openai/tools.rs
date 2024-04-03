@@ -1,10 +1,13 @@
 use async_openai::types::ChatCompletionToolType;
-use await_openai::{define_function_tool, entity::create_chat_completion::Tool};
+use await_openai::{
+    define_function_tool,
+    entity::create_chat_completion::Tool,
+    tool::{self, JsonSchema},
+};
 use openai_func_enums::{
     arg_description, get_tool_chat_completion_args, EnumDescriptor, FunctionCallResponse,
     VariantDescriptors,
 };
-use schemars::JsonSchema;
 use serde::Deserialize;
 
 pub fn de_function_tool_param() {

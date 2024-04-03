@@ -10,3 +10,6 @@ pub mod tool;
 pub mod claude;
 
 pub mod magi;
+
+#[cfg(feature = "gemini")]
+pub mod gemini;

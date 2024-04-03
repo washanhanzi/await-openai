@@ -11,15 +11,15 @@ pub use response::*;
 pub struct Content {
     //todo: it can be option?
     #[serde(deserialize_with = "deserialize_role")]
-    role: Role,
+    pub role: Role,
     #[serde(deserialize_with = "deserialize_obj_or_vec")]
-    parts: Vec<Part>,
+    pub parts: Vec<Part>,
 }
 
 ///The role in a conversation associated with the content. Specifying a role is required even in singleturn use cases. Acceptable values include the following:
 ///USER: Specifies content that's sent by you.
 ///MODEL: Specifies the model's response.
-#[derive(Debug, Serialize, Deserialize, Clone, Default, Copy, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Role {
     #[default]
@@ -51,8 +51,26 @@ pub enum Part {
     /// Serialized bytes data of the image or video. You can specify at most 1 image with inlineData. To specify up to 16 images, use fileData.
     #[serde(rename = "inlineData")]
     Inline(InlineData),
+    #[serde(rename = "functionCall")]
+    FunctionCall(FunctionCall),
+    #[serde(rename = "functionResponse")]
+    FunctionResponse(FunctionResponse),
     #[serde(rename = "fileData")]
     File(FileData),
+}
+
+impl Part {
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Part::Text(s) => s.trim().is_empty(),
+            Part::Inline(data) => data.data.trim().is_empty(),
+            Part::FunctionCall(call) => call.name.trim().is_empty(),
+            Part::FunctionResponse(response) => {
+                response.name.trim().is_empty() || response.response.is_null()
+            }
+            Part::File(file) => file.file_uri.trim().is_empty() || file.mime_type.trim().is_empty(),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -75,34 +93,50 @@ pub struct InlineData {
     /// Maximum video length: 2 minutes.
     ///
     /// No limit on image resolution.
-    mime_type: String,
+    pub mime_type: String,
     /// The base64 encoding of the image or video to include inline in the prompt. When including media inline, you must also specify MIMETYPE.
     /// size limit: 20MB
-    data: String,
-    video_metadata: Option<VideoMetadata>,
+    pub data: String,
+    pub video_metadata: Option<VideoMetadata>,
+}
+
+/// A predicted FunctionCall returned from the model that contains a string representing the FunctionDeclaration.name with the arguments and their values.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct FunctionCall {
+    /// Required. The name of the function to call. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 63.
+    pub name: String,
+    /// Optional. The function parameters and values in JSON object format.
+    pub args: Option<serde_json::Value>,
+}
+
+/// Required. The name of the function to call. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 63.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct FunctionResponse {
+    name: String,
+    response: serde_json::Value,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FileData {
-    mime_type: String,
+    pub mime_type: String,
     ///The Cloud Storage URI of the image or video to include in the prompt. The bucket that stores the file must be in the same Google Cloud project that's sending the request. You must also specify MIMETYPE.
     ///size limit: 20MB
-    file_uri: String,
-    video_metadata: Option<VideoMetadata>,
+    pub file_uri: String,
+    pub video_metadata: Option<VideoMetadata>,
 }
 
 /// Optional. For video input, the start and end offset of the video in Duration format. For example, to specify a 10 second clip starting at 1:00, set "start_offset": { "seconds": 60 } and "end_offset": { "seconds": 70 }.
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub struct VideoMetadata {
-    start_offset: VideoOffset,
-    end_offset: VideoOffset,
+    pub start_offset: VideoOffset,
+    pub end_offset: VideoOffset,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub struct VideoOffset {
-    seconds: i64,
-    nanos: i32,
+    pub seconds: i64,
+    pub nanos: i32,
 }
 
 /// The category of a rating.

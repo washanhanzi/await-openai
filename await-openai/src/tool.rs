@@ -1,11 +1,12 @@
 use anyhow::{anyhow, Result};
-use schemars::{gen::SchemaSettings, JsonSchema};
+use schemars::gen::SchemaSettings;
+pub use schemars::JsonSchema;
 
 use crate::entity::create_chat_completion::{FunctionTool, Tool, ToolType};
 pub use paste;
 
 /// get_function_tool accept function name, description and parameters type and return [Tool]
-/// use define_function_tool macro to create tool if you want to use the tool multiple times
+/// use define_function_tool macro to create tool if you need a static value
 pub fn get_function_tool<T: JsonSchema>(name: &str, desc: Option<String>) -> Result<Tool> {
     let json_value = parse_function_param::<T>()?;
     Ok(Tool {

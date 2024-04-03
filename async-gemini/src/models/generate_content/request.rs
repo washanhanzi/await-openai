@@ -5,7 +5,7 @@ use crate::{
 
 use serde::{Deserialize, Serialize};
 
-use super::Content;
+use super::{Content, Part, Role};
 
 /// when deserilization:
 /// - google api support both camelCase and snake_case key, but we only support camel case.
@@ -13,16 +13,17 @@ use super::Content;
 #[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct GenerateContentRequest {
+    // contents must start with user and alternate between user and model, and end with user or function response
     #[serde(deserialize_with = "deserialize_obj_or_vec")]
-    contents: Vec<Content>,
+    pub contents: Vec<Content>,
     /// A piece of code that enables the system to interact with external systems to perform an action, or set of actions, outside of knowledge and scope of the model.
     #[serde(skip_serializing_if = "Option::is_none")]
-    tools: Option<Vec<Tool>>,
+    pub tools: Option<Vec<Tool>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(deserialize_with = "deserialize_option_obj_or_vec", default)]
-    safety_settings: Option<Vec<SafetySetting>>,
+    pub safety_settings: Option<Vec<SafetySetting>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    generation_config: Option<GenerateionConfig>,
+    pub generation_config: Option<GenerateionConfig>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -66,34 +67,82 @@ pub struct GenerateionConfig {
     /// Range: 0.0 - 1.0
     /// Default for gemini-1.0-pro: 0.9
     /// Default for gemini-1.0-pro-vision: 0.4
-    temperature: Option<f32>,
+    pub temperature: Option<f32>,
     /// Top-P changes how the model selects tokens for output. Tokens are selected from the most (see top-K) to least probable until the sum of their probabilities equals the top-P value. For example, if tokens A, B, and C have a probability of 0.3, 0.2, and 0.1 and the top-P value is 0.5, then the model will select either A or B as the next token by using temperature and excludes C as a candidate.
     /// Specify a lower value for less random responses and a higher value for more random responses.
     /// Range: 0.0 - 1.0
     /// Default: 1.0
-    top_p: Option<f32>,
+    pub top_p: Option<f32>,
     /// Top-K changes how the model selects tokens for output. A top-K of 1 means the next selected token is the most probable among all tokens in the model's vocabulary (also called greedy decoding), while a top-K of 3 means that the next token is selected from among the three most probable tokens by using temperature.
     /// For each token selection step, the top-K tokens with the highest probabilities are sampled. Then tokens are further filtered based on top-P with the final token selected using temperature sampling.
     /// Specify a lower value for less random responses and a higher value for more random responses.
     /// Range: 1-40
     /// Default for gemini-1.0-pro-vision: 32
     /// Default for gemini-1.0-pro: none
-    top_k: Option<u32>,
+    pub top_k: Option<u32>,
     /// The number of response variations to return.
     /// This value must be 1.
-    candidate_count: Option<u32>,
+    pub candidate_count: Option<u32>,
     /// Maximum number of tokens that can be generated in the response. A token is approximately four characters. 100 tokens correspond to roughly 60-80 words.
     /// Specify a lower value for shorter responses and a higher value for potentially longer responses.
     /// Range for gemini-1.0-pro: 1-8192 (default: 8192)
     /// Range for gemini-1.0-pro-vision: 1-2048 (default: 2048)
-    max_output_tokens: Option<u64>,
+    pub max_output_tokens: Option<usize>,
     /// Specifies a list of strings that tells the model to stop generating text if one of the strings is encountered in the response. If a string appears multiple times in the response, then the response truncates where it's first encountered. The strings are case-sensitive.
     /// For example, if the following is the returned response when stopSequences isn't specified:
     /// public static string reverse(string myString)
     /// Then the returned response with stopSequences set to ["Str","reverse"] is:
     /// public static string
     /// Maximum 5 items in the list.
-    stop_sequences: Option<Vec<String>>,
+    pub stop_sequences: Option<Vec<String>>,
+}
+
+/// Gemini require contents:
+/// 1. start with "user" role
+/// 2. alternate between "user" and "model" role
+/// 3. end with "user" role or function response
+pub fn process_contents(contents: &[Content]) -> Vec<Content> {
+    let mut filtered = Vec::with_capacity(contents.len());
+    if contents.is_empty() {
+        return filtered;
+    }
+    let mut prev_role: Option<Role> = None;
+    for content in contents {
+        if let Some(pr) = prev_role {
+            if pr == content.role {
+                if let Some(last) = filtered.last_mut() {
+                    last.parts.extend(content.parts.clone());
+                };
+                prev_role = Some(content.role);
+                continue;
+            }
+        }
+        filtered.push(content.clone());
+        prev_role = Some(content.role);
+    }
+
+    if let Some(first) = filtered.first() {
+        if first.role == Role::Model {
+            filtered.insert(
+                0,
+                Content {
+                    role: Role::User,
+                    parts: vec![Part::Text("Starting the conversation...".to_string())],
+                },
+            )
+        }
+    }
+
+    if let Some(last) = filtered.last() {
+        if last.role == Role::Model {
+            filtered.push(Content {
+                role: Role::User,
+                parts: vec![Part::Text("continue".to_string())],
+            });
+        }
+    }
+
+    filtered
 }
 
 #[cfg(test)]
@@ -464,6 +513,48 @@ mod tests {
             let serialized = serde_json::to_string(&expected).unwrap();
             let actual: GenerateContentRequest = serde_json::from_str(&serialized).unwrap();
             assert_eq!(actual, expected, "serialize test failed: {}", name);
+        }
+    }
+
+    #[test]
+    fn process() {
+        let tests = vec![
+            (
+                "[(model, text)]",
+                vec![Content {
+                    role: Role::Model,
+                    parts: vec![Part::Text("hi".to_string())],
+                }],
+                vec![
+                    Content {
+                        role: Role::User,
+                        parts: vec![Part::Text("Starting the conversation...".to_string())],
+                    },
+                    Content {
+                        role: Role::Model,
+                        parts: vec![Part::Text("hi".to_string())],
+                    },
+                    Content {
+                        role: Role::User,
+                        parts: vec![Part::Text("continue".to_string())],
+                    },
+                ],
+            ),
+            (
+                "[(user, text)]",
+                vec![Content {
+                    role: Role::User,
+                    parts: vec![Part::Text("hi".to_string())],
+                }],
+                vec![Content {
+                    role: Role::User,
+                    parts: vec![Part::Text("hi".to_string())],
+                }],
+            ),
+        ];
+        for (name, contents, want) in tests {
+            let got = process_contents(&contents);
+            assert_eq!(got, want, "test failed: {}", name)
         }
     }
 }
