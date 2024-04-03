@@ -1,5 +1,5 @@
 [workspace]
-members = ["await-openai", "async-gemini","async-claude"]
+members = ["await-openai", "async-gemini", "async-claude"]
 # Only check / build main crates by default (check all with `--workspace`)
 default-members = ["await-openai"]
 resolver = "2"

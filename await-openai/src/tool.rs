@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use schemars::gen::SchemaSettings;
-pub use schemars::JsonSchema;
+pub use schemars::{self, JsonSchema};
 
 use crate::entity::create_chat_completion::{FunctionTool, Tool, ToolType};
 pub use paste;
