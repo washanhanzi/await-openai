@@ -21,6 +21,15 @@ pub struct Request {
     pub top_p: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_k: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tools: Option<Tool>,
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
+pub struct Tool {
+    pub name: String,
+    pub description: Option<String>,
+    pub input_schema: serde_json::Value,
 }
 
 /// process_messages take arbitrary user input messages and process them to ensure them conform to Anthropic API requirements.
