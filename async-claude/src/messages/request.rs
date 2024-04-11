@@ -22,7 +22,7 @@ pub struct Request {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_k: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tools: Option<Tool>,
+    pub tools: Option<Vec<Tool>>,
 }
 
 #[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
@@ -224,6 +224,172 @@ mod tests {
                             },
                         ]),
                     }],
+                    ..Default::default()
+                },
+            ),
+            (
+                "tools",
+                r#"{
+                "model": "claude-3-opus-20240229",
+                "max_tokens": 1024,
+                "messages": [
+                    {"role": "user", "content": [
+                        {"type": "text", "text": "What is in this image?"}
+                      ]}
+                ],
+                "tools":[
+                    {
+                      "name": "get_stock_price",
+                      "description": "Get the current stock price for a given ticker symbol.",
+                      "input_schema": {
+                        "type": "object",
+                        "properties": {
+                          "ticker": {
+                            "type": "string",
+                            "description": "The stock ticker symbol, e.g. AAPL for Apple Inc."
+                          }
+                        },
+                        "required": ["ticker"]
+                      }
+                    }
+                  ]
+            }"#,
+                Request {
+                    model: "claude-3-opus-20240229".to_string(),
+                    max_tokens: 1024,
+                    messages: vec![Message {
+                        role: Role::User,
+                        content: MessageContent::Blocks(vec![
+                            ContentBlock::Text {
+                                text: "What is in this image?".to_string(),
+                            },
+                        ]),
+                    }],
+                    tools: Some(vec![Tool {
+                        name: "get_stock_price".to_string(),
+                        description: Some(
+                            "Get the current stock price for a given ticker symbol.".to_string(),
+                        ),
+                        input_schema: serde_json::json!({
+                          "type": "object",
+                          "properties": {
+                            "ticker": {
+                              "type": "string",
+                              "description": "The stock ticker symbol, e.g. AAPL for Apple Inc."
+                            }
+                          },
+                          "required": ["ticker"]
+                        }),
+                    }]),
+                    ..Default::default()
+                },
+            ),
+            (
+                "tools_with_result",
+                r#"{
+                "model": "claude-3-opus-20240229",
+                "max_tokens": 1024,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "what is the stock price of NASDAQ.GOOG"
+                    },
+                    {
+                        "role": "assistant",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "<thinking>\nThe function get_stock_price is relevant to answering this question, as it retrieves the current stock price for a given ticker symbol.\n\nThe function requires a single parameter:\n- ticker: The stock ticker symbol\n\nThe user provided the ticker symbol \"NASDAQ.GOOG\" which corresponds to the Class C shares of Alphabet Inc. (Google) traded on the NASDAQ exchange.\n\nSince the required ticker parameter has been provided, I can proceed with calling the function.\n</thinking>"
+                            },
+                            {
+                                "type": "tool_use",
+                                "id": "toolu_01464CNHnkv7MTDtURXQR3TU",
+                                "name": "get_stock_price",
+                                "input": {
+                                    "ticker": "NASDAQ.GOOG"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": "toolu_01464CNHnkv7MTDtURXQR3TU",
+                                "content": "15 USD"
+                            }
+                        ]
+                    }
+                ],
+                "tools":[
+                    {
+                      "name": "get_stock_price",
+                      "description": "Get the current stock price for a given ticker symbol.",
+                      "input_schema": {
+                        "type": "object",
+                        "properties": {
+                          "ticker": {
+                            "type": "string",
+                            "description": "The stock ticker symbol, e.g. AAPL for Apple Inc."
+                          }
+                        },
+                        "required": ["ticker"]
+                      }
+                    }
+                  ]
+            }"#,
+                Request {
+                    model: "claude-3-opus-20240229".to_string(),
+                    max_tokens: 1024,
+                    messages: vec![
+                        Message {
+                            role: Role::User,
+                            content: MessageContent::Text("what is the stock price of NASDAQ.GOOG".to_string(),
+                            ),
+                        },
+                        Message {
+                            role: Role::Assistant,
+                            content: MessageContent::Blocks(vec![
+                                ContentBlock::Text {
+                                    text: "<thinking>\nThe function get_stock_price is relevant to answering this question, as it retrieves the current stock price for a given ticker symbol.\n\nThe function requires a single parameter:\n- ticker: The stock ticker symbol\n\nThe user provided the ticker symbol \"NASDAQ.GOOG\" which corresponds to the Class C shares of Alphabet Inc. (Google) traded on the NASDAQ exchange.\n\nSince the required ticker parameter has been provided, I can proceed with calling the function.\n</thinking>".to_string(),
+                                },
+                                ContentBlock::ToolUse {
+                                     id: "toolu_01464CNHnkv7MTDtURXQR3TU".to_string(),
+                                      name: "get_stock_price".to_string(),
+                                       input: serde_json::json!(
+                                            {
+                                                "ticker": "NASDAQ.GOOG"
+                                            }),
+                                }
+                            ]),
+                        },
+                        Message {
+                            role:Role::User,
+                            content: MessageContent::Blocks(vec![
+                                ContentBlock::ToolResult {
+                                    tool_use_id: "toolu_01464CNHnkv7MTDtURXQR3TU".to_string(),
+                                    content: "15 USD".to_string(),
+                                },
+                            ]),
+                        }
+                    ],
+                    tools: Some(vec![Tool {
+                        name: "get_stock_price".to_string(),
+                        description: Some(
+                            "Get the current stock price for a given ticker symbol.".to_string(),
+                        ),
+                        input_schema: serde_json::json!({
+                          "type": "object",
+                          "properties": {
+                            "ticker": {
+                              "type": "string",
+                              "description": "The stock ticker symbol, e.g. AAPL for Apple Inc."
+                            }
+                          },
+                          "required": ["ticker"]
+                        }),
+                    }]),
                     ..Default::default()
                 },
             ),
