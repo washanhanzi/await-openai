@@ -65,6 +65,17 @@ pub enum ContentBlock {
     Image { source: ImageSource },
     #[serde(rename = "text_delta")]
     TextDelta { text: String },
+    #[serde(rename = "tool_use")]
+    ToolUse {
+        id: String,
+        name: String,
+        input: serde_json::Value,
+    },
+    #[serde(rename = "tool_result")]
+    ToolResult {
+        tool_use_id: String,
+        content: String,
+    },
 }
 
 impl ContentBlock {
@@ -77,6 +88,13 @@ impl ContentBlock {
                 }
             },
             ContentBlock::TextDelta { text } => text.trim().is_empty(),
+            ContentBlock::ToolUse { id, name, input } => {
+                id.is_empty() || name.is_empty() || input.is_null()
+            }
+            ContentBlock::ToolResult {
+                tool_use_id,
+                content,
+            } => tool_use_id.is_empty() || content.is_empty(),
         }
     }
 }
@@ -94,6 +112,7 @@ pub enum StopReason {
     EndTurn,
     MaxTokens,
     StopSequence,
+    ToolUse,
 }
 
 #[derive(Debug, Deserialize, Default, Clone, PartialEq, Serialize)]

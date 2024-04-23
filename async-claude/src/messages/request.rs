@@ -21,6 +21,15 @@ pub struct Request {
     pub top_p: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_k: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tools: Option<Vec<Tool>>,
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
+pub struct Tool {
+    pub name: String,
+    pub description: Option<String>,
+    pub input_schema: serde_json::Value,
 }
 
 /// process_messages take arbitrary user input messages and process them to ensure them conform to Anthropic API requirements.
@@ -939,6 +948,200 @@ mod tests {
         for (name, messages, expected) in tests {
             let got = process_messages(&messages);
             assert_eq!(got, expected, "test failed: {}", name);
+        }
+    }
+
+    #[test]
+    fn tool_use() {
+        let tests = vec![
+            (
+                "simple tool",
+                r#"{
+                "model": "claude-3-opus-20240229",
+                "max_tokens": 1024,
+                "tools": [{
+                    "name": "get_weather",
+                    "description": "Get the current weather in a given location",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "location": {
+                                "type": "string",
+                                "description": "The city and state, e.g. San Francisco, CA"
+                            },
+                            "unit": {
+                                "type": "string",
+                                "enum": ["celsius", "fahrenheit"],
+                                "description": "The unit of temperature, either \"celsius\" or \"fahrenheit\""
+                            }
+                        },
+                        "required": ["location"]
+                    }
+                }],
+                "messages": [{"role": "user", "content": "What is the weather like in San Francisco?"}]
+            }"#,
+                Request {
+                    model: "claude-3-opus-20240229".to_string(),
+                    max_tokens: 1024,
+                    messages: vec![Message {
+                        role: Role::User,
+                        content: MessageContent::Text(
+                            "What is the weather like in San Francisco?".to_string(),
+                        ),
+                    }],
+                    tools: Some(vec![Tool {
+                        name: "get_weather".to_string(),
+                        description: Some(
+                            "Get the current weather in a given location".to_string(),
+                        ),
+                        input_schema: serde_json::json!({
+                            "type": "object",
+                            "properties": {
+                                "location": {
+                                    "type": "string",
+                                    "description": "The city and state, e.g. San Francisco, CA"
+                                },
+                                "unit": {
+                                    "type": "string",
+                                    "enum": ["celsius", "fahrenheit"],
+                                    "description": "The unit of temperature, either \"celsius\" or \"fahrenheit\""
+                                }
+                            },
+                            "required": ["location"]
+                        }),
+                    }]),
+                    ..Default::default()
+                },
+            ),
+            (
+                "sequencial",
+                r#"{
+                "model": "claude-3-opus-20240229",
+                "max_tokens": 1024,
+                "tools": [
+                    {
+                        "name": "get_weather",
+                        "description": "Get the current weather in a given location",
+                        "input_schema": {
+                            "type": "object",
+                            "properties": {
+                                "location": {
+                                    "type": "string",
+                                    "description": "The city and state, e.g. San Francisco, CA"
+                                },
+                                "unit": {
+                                    "type": "string",
+                                    "enum": ["celsius", "fahrenheit"],
+                                    "description": "The unit of temperature, either \"celsius\" or \"fahrenheit\""
+                                }
+                            },
+                            "required": ["location"]
+                        }
+                    }
+                ],
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "What is the weather like in San Francisco?"
+                    },
+                    {
+                        "role": "assistant",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "<thinking>I need to use get_weather, and the user wants SF, which is likely San Francisco, CA.</thinking>"
+                            },
+                            {
+                                "type": "tool_use",
+                                "id": "toolu_01A09q90qw90lq917835lq9",
+                                "name": "get_weather",
+                                "input": {
+                                    "location": "San Francisco, CA",
+                                    "unit": "celsius"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": "toolu_01A09q90qw90lq917835lq9",
+                                "content": "15 degrees"
+                            }
+                        ]
+                    }
+                ]
+            }"#,
+                Request {
+                    model: "claude-3-opus-20240229".to_string(),
+                    max_tokens: 1024,
+                    tools: Some(vec![Tool {
+                        name: "get_weather".to_string(),
+                        description: Some(
+                            "Get the current weather in a given location".to_string(),
+                        ),
+                        input_schema: serde_json::json!({
+                            "type": "object",
+                            "properties": {
+                                "location": {
+                                    "type": "string",
+                                    "description": "The city and state, e.g. San Francisco, CA"
+                                },
+                                "unit": {
+                                    "type": "string",
+                                    "enum": ["celsius", "fahrenheit"],
+                                    "description": "The unit of temperature, either \"celsius\" or \"fahrenheit\""
+                                }
+                            },
+                            "required": ["location"]
+                        }),
+                    }]),
+                    messages: vec![
+                        Message {
+                            role: Role::User,
+                            content: MessageContent::Text(
+                                "What is the weather like in San Francisco?".to_string(),
+                            ),
+                        },
+                        Message {
+                            role: Role::Assistant,
+                            content: MessageContent::Blocks(vec![
+                                ContentBlock::Text {
+                                    text: "<thinking>I need to use get_weather, and the user wants SF, which is likely San Francisco, CA.</thinking>".to_string(),
+                                },
+                                ContentBlock::ToolUse {
+                                    id:"toolu_01A09q90qw90lq917835lq9".to_string(),
+                                     name: "get_weather".to_string(),
+                                     input: serde_json::json!({
+                                    "location": "San Francisco, CA",
+                                    "unit": "celsius"
+                                }) }
+                            ]),
+                        },
+                        Message{
+                            role:Role::User,
+                            content:MessageContent::Blocks(vec![
+                                ContentBlock::ToolResult{
+                                    tool_use_id:"toolu_01A09q90qw90lq917835lq9".to_string(),
+                                    content:"15 degrees".to_string()
+                                }
+                            ])
+                        }
+                    ],
+                    ..Default::default()
+                },
+            ),
+        ];
+        for (name, json, expected) in tests {
+            //test deserialize
+            let actual: Request = serde_json::from_str(json).unwrap();
+            assert_eq!(actual, expected, "deserialize test failed: {}", name);
+            //test serialize
+            let serialized = serde_json::to_string(&expected).unwrap();
+            let actual: Request = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(actual, expected, "serialize test failed: {}", name);
         }
     }
 }
