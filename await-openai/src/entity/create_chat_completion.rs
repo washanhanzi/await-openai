@@ -103,6 +103,118 @@ pub struct RequestBody {
     pub user: Option<String>,
 }
 
+pub struct RequestBodyBuilder {
+    inner: RequestBody,
+}
+
+impl RequestBodyBuilder {
+    pub fn new() -> Self {
+        RequestBodyBuilder {
+            inner: RequestBody::default(),
+        }
+    }
+
+    pub fn model(mut self, model: impl Into<String>) -> Self {
+        self.inner.model = model.into();
+        self
+    }
+
+    pub fn messages(mut self, messages: Vec<Message>) -> Self {
+        self.inner.messages = messages;
+        self
+    }
+
+    pub fn frequency_penalty(mut self, frequency_penalty: f32) -> Self {
+        self.inner.frequency_penalty = Some(frequency_penalty);
+        self
+    }
+
+    pub fn logit_bias(mut self, logit_bias: HashMap<String, serde_json::Value>) -> Self {
+        self.inner.logit_bias = Some(logit_bias);
+        self
+    }
+
+    pub fn logprobs(mut self, logprobs: bool) -> Self {
+        self.inner.logprobs = Some(logprobs);
+        self
+    }
+
+    pub fn top_logprobs(mut self, top_logprobs: u8) -> Self {
+        self.inner.top_logprobs = Some(top_logprobs);
+        self
+    }
+
+    pub fn max_tokens(mut self, max_tokens: usize) -> Self {
+        self.inner.max_tokens = Some(max_tokens);
+        self
+    }
+
+    pub fn n(mut self, n: u8) -> Self {
+        self.inner.n = Some(n);
+        self
+    }
+
+    pub fn presence_penalty(mut self, presence_penalty: f32) -> Self {
+        self.inner.presence_penalty = Some(presence_penalty);
+        self
+    }
+
+    pub fn response_format(mut self, response_format: ResponseFormat) -> Self {
+        self.inner.response_format = Some(response_format);
+        self
+    }
+
+    pub fn seed(mut self, seed: i64) -> Self {
+        self.inner.seed = Some(seed);
+        self
+    }
+
+    pub fn stop(mut self, stop: Stop) -> Self {
+        self.inner.stop = Some(stop);
+        self
+    }
+
+    pub fn stream(mut self, stream: bool) -> Self {
+        self.inner.stream = Some(stream);
+        self
+    }
+
+    pub fn temperature(mut self, temperature: f32) -> Self {
+        self.inner.temperature = Some(temperature);
+        self
+    }
+
+    pub fn top_p(mut self, top_p: f32) -> Self {
+        self.inner.top_p = Some(top_p);
+        self
+    }
+
+    pub fn tools(mut self, tools: Vec<Tool>) -> Self {
+        self.inner.tools = Some(tools);
+        self
+    }
+
+    pub fn tool_choice(mut self, tool_choice: ToolChoice) -> Self {
+        self.inner.tool_choice = Some(tool_choice);
+        self
+    }
+
+    pub fn user(mut self, user: impl Into<String>) -> Self {
+        self.inner.user = Some(user.into());
+        self
+    }
+
+    pub fn build(self) -> RequestBody {
+        self.inner
+    }
+}
+
+impl Default for RequestBodyBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum Stop {
@@ -255,6 +367,19 @@ pub struct AssistantMessage {
 pub enum ToolCall {
     #[serde(rename = "function")]
     Function(ToolCallFunction),
+}
+
+impl ToolCall {
+    pub fn id(&self) -> &str {
+        match self {
+            ToolCall::Function(f) => &f.id,
+        }
+    }
+    pub fn name(&self) -> &str {
+        match self {
+            ToolCall::Function(f) => &f.function.name,
+        }
+    }
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]

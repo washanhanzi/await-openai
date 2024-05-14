@@ -119,12 +119,12 @@ pub struct OpenaiEventDataParser {
 }
 
 impl EventDataParser<Chunk, Chunk, Response> for OpenaiEventDataParser {
-    fn parse_data(&mut self, data: &Chunk) -> Option<Chunk> {
+    fn tool(&mut self, data: &Chunk) -> Option<Chunk> {
         match data {
             Chunk::Data(response) => {
                 self.update_basic_info(response);
                 if let Some(choice) = response.choices.first() {
-                    self.logprobs = choice.logprobs.clone();
+                    self.logprobs.clone_from(&choice.logprobs);
                     if let Some(reason) = choice.finish_reason {
                         self.finish_reason = Some(reason);
                         if reason == FinishReason::ToolCalls {
@@ -196,7 +196,7 @@ impl OpenaiEventDataParser {
     }
     pub fn parse_str(&mut self, data: &str) -> Result<Option<Chunk>, serde_json::Error> {
         let chunk = Chunk::from_str(data)?;
-        Ok(self.parse_data(&chunk))
+        Ok(self.tool(&chunk))
     }
     pub fn push_content(&mut self, content: &str) {
         self.content.push_str(content);
@@ -212,7 +212,8 @@ impl OpenaiEventDataParser {
         self.created = response.created;
         self.model = response.model.to_string();
         if self.system_fingerprint.is_none() {
-            self.system_fingerprint = response.system_fingerprint.clone();
+            self.system_fingerprint
+                .clone_from(&response.system_fingerprint);
         }
     }
     fn parse_new_tool_call(

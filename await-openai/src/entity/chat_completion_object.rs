@@ -191,7 +191,7 @@ mod tests {
                         "message": {
                           "role": "assistant",
                           "content": null,
-                          "tool_calls": [
+                          "tool_cealls": [
                             {
                               "id": "call_abc123",
                               "type": "function",

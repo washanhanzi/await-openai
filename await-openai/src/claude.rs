@@ -150,7 +150,7 @@ impl Default for ClaudeEventDataParser {
 
 impl EventDataParser<Chunk, Chunk, OpenaiResponse> for ClaudeEventDataParser {
     //claude api won't return tool_call infomation for now, parse_data always return none
-    fn parse_data(&mut self, data: &Chunk) -> Option<Chunk> {
+    fn tool(&mut self, data: &Chunk) -> Option<Chunk> {
         match data {
             Chunk::Done => Some(Chunk::Done),
             _ => None,
@@ -269,6 +269,7 @@ impl From<StopReason> for FinishReason {
             StopReason::EndTurn => FinishReason::Stop,
             StopReason::MaxTokens => FinishReason::Length,
             StopReason::StopSequence => FinishReason::Stop,
+            StopReason::ToolUse => FinishReason::ToolCalls,
         }
     }
 }
@@ -517,14 +518,11 @@ mod tests {
                 (Some(Chunk::Done), Chunk::Done) => {}
                 (Some(d), w) => {
                     //parser test
-                    let event_data = parser.parse_data(&d);
+                    let event_data = parser.tool(&d);
                     if w == Chunk::Done {
-                        assert_eq!(
-                            parser.parse_data(event_data.as_ref().unwrap()),
-                            Some(Chunk::Done)
-                        );
+                        assert_eq!(parser.tool(event_data.as_ref().unwrap()), Some(Chunk::Done));
                     } else {
-                        assert_eq!(parser.parse_data(event_data.as_ref().unwrap()), None);
+                        assert_eq!(parser.tool(event_data.as_ref().unwrap()), None);
                     }
                 }
                 (_, _) => {

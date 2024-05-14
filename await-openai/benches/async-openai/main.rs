@@ -3,7 +3,7 @@ use async_openai::types::{
     ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs,
 };
 use await_openai::entity::create_chat_completion::{
-    AssistantMessage, Content, Message, RequestBody, SystemMessage, UserMessage,
+    AssistantMessage, Content, Message, RequestBody, RequestBodyBuilder, SystemMessage, UserMessage,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
 use serde::de::DeserializeOwned;
@@ -23,9 +23,9 @@ fn de_bench_with_async_openai<I: DeserializeOwned>(s: &str) {
 }
 
 fn se_default_request() {
-    let request = RequestBody {
-        model: "gpt-3.5-turbo".to_string(),
-        messages: vec![
+    let request = RequestBodyBuilder::default()
+        .model("gpt-3.5-turbo".to_string())
+        .messages(vec![
             Message::System(SystemMessage {
                 content: "You are a helpful assistant.".to_string(),
                 ..Default::default()
@@ -42,9 +42,8 @@ fn se_default_request() {
                 content: Content::Text("Where was it played?".to_string()),
                 name: None,
             }),
-        ],
-        ..Default::default()
-    };
+        ])
+        .build();
     let _result = serde_json::to_string(&request).unwrap();
 }
 
