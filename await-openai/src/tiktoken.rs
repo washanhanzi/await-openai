@@ -1,4 +1,7 @@
-use std::collections::VecDeque;
+use std::{
+    collections::VecDeque,
+    sync::{Arc, OnceLock, RwLock},
+};
 
 use crate::entity::{
     chat_completion_object::{Choice, Response, Usage},
@@ -8,7 +11,7 @@ use crate::entity::{
 };
 use anyhow::{anyhow, Result};
 use tiktoken_rs::{
-    get_bpe_from_tokenizer,
+    cl100k_base, get_bpe_from_tokenizer,
     tokenizer::{get_tokenizer, Tokenizer},
     CoreBPE,
 };
@@ -21,24 +24,28 @@ pub trait TokenCounter {
 }
 
 pub struct BpeTokenCounter {
-    bpe: CoreBPE,
+    bpe: Arc<RwLock<CoreBPE>>,
+}
+
+static CL100K_BASE_TOKENIZER: OnceLock<Arc<RwLock<CoreBPE>>> = OnceLock::new();
+
+pub fn cl100k_base_tokenizer() -> Arc<RwLock<CoreBPE>> {
+    CL100K_BASE_TOKENIZER
+        .get_or_init(|| Arc::new(RwLock::new(cl100k_base().unwrap())))
+        .clone()
 }
 
 impl BpeTokenCounter {
-    pub fn new(model: &str) -> Result<Self> {
-        let tokenizer = get_tokenizer(model)
-            .ok_or_else(|| anyhow!("No tokenizer found for model {}", model))?;
-        if tokenizer != Tokenizer::Cl100kBase {
-            anyhow::bail!("Only Cl100kBase model is supported for now")
-        }
-        let bpe = get_bpe_from_tokenizer(tokenizer)?;
-        Ok(BpeTokenCounter { bpe })
+    pub fn new(_model: &str) -> Self {
+        let bpe = cl100k_base_tokenizer();
+        BpeTokenCounter { bpe }
     }
 }
 
 impl TokenCounter for BpeTokenCounter {
     fn count(&self, content: &str) -> usize {
-        self.bpe.encode_with_special_tokens(content).len()
+        let bpe = self.bpe.read().unwrap();
+        bpe.encode_with_special_tokens(content).len()
     }
 }
 
@@ -229,30 +236,30 @@ impl OpenaiTokens {
 /// You can check the test cases for the estimated and actual token usage. run `cargo test --features tiktoken`.
 ///
 /// [`AssistantMessage`]: crate::entity::create_chat_completion::AssistantMessage
-pub fn prompt_tokens(model: &str, messages: &[Message], tools: Option<&[Tool]>) -> Result<usize> {
-    let counter = BpeTokenCounter::new(model)?;
+pub fn prompt_tokens(model: &str, messages: &[Message], tools: Option<&[Tool]>) -> usize {
+    let counter = BpeTokenCounter::new(model);
     let mut openai_tokens = OpenaiTokens::new(None, None);
-    Ok(openai_tokens.request_count(messages, tools, &counter))
+    openai_tokens.request_count(messages, tools, &counter)
 }
 
 /// completion_tokens calculates the token usage for completion object.
 /// The result is an estimation when response includes [`ToolCall`].
-pub fn completion_tokens(model: &str, choices: &[Choice]) -> Result<usize> {
-    let counter = BpeTokenCounter::new(model)?;
+pub fn completion_tokens(model: &str, choices: &[Choice]) -> usize {
+    let counter = BpeTokenCounter::new(model);
     let mut openai_tokens = OpenaiTokens::new(None, None);
-    Ok(openai_tokens.response_count(choices, &counter))
+    openai_tokens.response_count(choices, &counter)
 }
 
-pub fn usage(req: &RequestBody, res: &Response) -> Result<Usage> {
-    let counter = BpeTokenCounter::new(&res.model)?;
+pub fn usage(req: &RequestBody, res: &Response) -> Usage {
+    let counter = BpeTokenCounter::new(&res.model);
     let mut openai_tokens = OpenaiTokens::new(None, None);
     let prompt_tokens = openai_tokens.request_count(&req.messages, req.tools.as_deref(), &counter);
     let completion_tokens = openai_tokens.response_count(&res.choices, &counter);
-    Ok(Usage {
+    Usage {
         prompt_tokens,
         completion_tokens,
         total_tokens: prompt_tokens + completion_tokens,
-    })
+    }
 }
 
 #[cfg(test)]
