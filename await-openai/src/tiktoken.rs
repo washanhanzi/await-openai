@@ -9,12 +9,7 @@ use crate::entity::{
         Content, ContentPart, Message, RequestBody, Tool, ToolCall, ToolType,
     },
 };
-use anyhow::{anyhow, Result};
-use tiktoken_rs::{
-    cl100k_base, get_bpe_from_tokenizer,
-    tokenizer::{get_tokenizer, Tokenizer},
-    CoreBPE,
-};
+use tiktoken_rs::{cl100k_base, CoreBPE};
 
 mod image_token;
 pub use image_token::get_image_tokens;
@@ -284,7 +279,7 @@ mod tests {
                 content: Content::Text("hi, how are you".to_string()),
             }),
         ];
-        let num_tokens = prompt_tokens("gpt-3.5-turbo", &messages, None).unwrap();
+        let num_tokens = prompt_tokens("gpt-3.5-turbo", &messages, None);
         assert_eq!(num_tokens, 22);
     }
 
@@ -300,7 +295,7 @@ mod tests {
             finish_reason: Some(FinishReason::Stop),
             logprobs: None,
         }];
-        let num_tokens = completion_tokens("gpt-3.5-turbo", &choices).unwrap();
+        let num_tokens = completion_tokens("gpt-3.5-turbo", &choices);
         assert_eq!(num_tokens, 33);
     }
 
@@ -333,7 +328,7 @@ mod tests {
                 })),
             },
         }];
-        let num_tokens = prompt_tokens("gpt-3.5-turbo", &messages, Some(&tools)).unwrap();
+        let num_tokens = prompt_tokens("gpt-3.5-turbo", &messages, Some(&tools));
         //82 vs 85
         assert_eq!(num_tokens, 85);
     }
@@ -362,7 +357,7 @@ mod tests {
                 })),
             },
         }];
-        let num_tokens = prompt_tokens("gpt-3.5-turbo", &messages, Some(&tools)).unwrap();
+        let num_tokens = prompt_tokens("gpt-3.5-turbo", &messages, Some(&tools));
         //68 vs 75
         assert_eq!(num_tokens, 75);
     }
@@ -399,7 +394,7 @@ mod tests {
                 })),
             },
         }];
-        let num_tokens = prompt_tokens("gpt-3.5-turbo", &messages, Some(&tools)).unwrap();
+        let num_tokens = prompt_tokens("gpt-3.5-turbo", &messages, Some(&tools));
         //88 vs 89
         assert_eq!(num_tokens, 89);
     }
@@ -459,7 +454,7 @@ mod tests {
                 })),
             },
         }];
-        let num_tokens = prompt_tokens("gpt-3.5-turbo", &messages, Some(&tools)).unwrap();
+        let num_tokens = prompt_tokens("gpt-3.5-turbo", &messages, Some(&tools));
         //157 vs 139
         assert_eq!(num_tokens, 139);
     }
@@ -484,7 +479,7 @@ mod tests {
             finish_reason: Some(FinishReason::ToolCalls),
             logprobs: None,
         }];
-        let num_tokens = completion_tokens("gpt-3.5-turbo", &choices).unwrap();
+        let num_tokens = completion_tokens("gpt-3.5-turbo", &choices);
         //15 vs 16
         assert_eq!(num_tokens, 16);
     }
@@ -518,7 +513,7 @@ mod tests {
             finish_reason: Some(FinishReason::ToolCalls),
             logprobs: None,
         }];
-        let num_tokens = completion_tokens("gpt-3.5-turbo", &choices).unwrap();
+        let num_tokens = completion_tokens("gpt-3.5-turbo", &choices);
         //46 vs 57
         assert_eq!(num_tokens, 57);
     }
@@ -560,7 +555,7 @@ mod tests {
             finish_reason: Some(FinishReason::ToolCalls),
             logprobs: None,
         }];
-        let num_tokens = completion_tokens("gpt-3.5-turbo", &choices).unwrap();
+        let num_tokens = completion_tokens("gpt-3.5-turbo", &choices);
         //69 vs 80
         assert_eq!(num_tokens, 80);
     }
