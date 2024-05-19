@@ -1,14 +1,8 @@
-use async_openai::types::ChatCompletionToolType;
 use await_openai::{
     define_function_tool,
     entity::create_chat_completion::Tool,
     tool::{schemars, JsonSchema},
 };
-use openai_func_enums::{
-    arg_description, get_tool_chat_completion_args, EnumDescriptor, FunctionCallResponse,
-    VariantDescriptors,
-};
-use serde::Deserialize;
 
 pub fn de_function_tool_param() {
     #[derive(JsonSchema, serde::Deserialize)]
@@ -52,42 +46,4 @@ pub fn de_function_tool_param() {
     );
 
     let _tools: Vec<Tool> = vec![get_get_weather().clone()];
-}
-
-pub fn de_function_tool_param_use_func_enums() {
-    #[derive(Debug, FunctionCallResponse)]
-    pub enum FunctionDef {
-        #[func_description(
-            description = "Get the current weather in the location closest to the one provided location"
-        )]
-        GetCurrentWeather(Location, TemperatureUnits),
-    }
-
-    #[derive(Clone, Debug, Deserialize, EnumDescriptor, VariantDescriptors)]
-    #[arg_description(description = "The only valid locations that can be passed.")]
-    pub enum Location {
-        Atlanta,
-        Boston,
-        Chicago,
-        Dallas,
-        Denver,
-        LosAngeles,
-        Miami,
-        Nashville,
-        NewYork,
-        Philadelphia,
-        Seattle,
-        StLouis,
-        Washington,
-    }
-
-    #[derive(Clone, Debug, Deserialize, EnumDescriptor, VariantDescriptors)]
-    #[arg_description(description = "A temperature unit chosen from the enum.")]
-    pub enum TemperatureUnits {
-        Celcius,
-        Fahrenheit,
-    }
-    let tool_args =
-        get_tool_chat_completion_args(GetCurrentWeatherResponse::get_function_json).unwrap();
-    let _param = tool_args.0;
 }

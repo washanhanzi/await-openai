@@ -100,9 +100,6 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("serialize function tool", |b| {
         b.iter(tools::de_function_tool_param)
     });
-    c.bench_function("serialize function tool with func enum", |b| {
-        b.iter(tools::de_function_tool_param_use_func_enums)
-    });
 }
 
 criterion_group!(benches, criterion_benchmark);
