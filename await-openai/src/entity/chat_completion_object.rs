@@ -114,11 +114,11 @@ pub struct TopLogprobs {
 #[derive(Debug, Deserialize, Serialize, Default, Clone, PartialEq)]
 pub struct Usage {
     /// Number of tokens in the prompt.
-    pub prompt_tokens: usize,
+    pub prompt_tokens: u32,
     /// Number of tokens in the generated completion.
-    pub completion_tokens: usize,
+    pub completion_tokens: u32,
     /// Total number of tokens used in the request (prompt + completion).
-    pub total_tokens: usize,
+    pub total_tokens: u32,
 }
 
 #[cfg(test)]

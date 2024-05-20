@@ -13,3 +13,8 @@ pub mod magi;
 
 #[cfg(feature = "gemini")]
 pub mod gemini;
+
+#[cfg(feature = "price")]
+mod price;
+#[cfg(feature = "price")]
+pub use price::price;

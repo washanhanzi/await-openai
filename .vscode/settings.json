@@ -5,7 +5,8 @@
 		"models",
 		"util",
 		"claude",
-		"gemini"
+		"gemini",
+		"price"
 	],
 	"rust-analyzer.linkedProjects": [
 		"await-openai/Cargo.toml",

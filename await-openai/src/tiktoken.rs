@@ -15,7 +15,7 @@ mod image_token;
 pub use image_token::get_image_tokens;
 
 pub trait TokenCounter {
-    fn count(&self, content: &str) -> usize;
+    fn count(&self, content: &str) -> u32;
 }
 
 pub struct BpeTokenCounter {
@@ -38,9 +38,9 @@ impl BpeTokenCounter {
 }
 
 impl TokenCounter for BpeTokenCounter {
-    fn count(&self, content: &str) -> usize {
+    fn count(&self, content: &str) -> u32 {
         let bpe = self.bpe.read().unwrap();
-        bpe.encode_with_special_tokens(content).len()
+        bpe.encode_with_special_tokens(content).len() as u32
     }
 }
 
@@ -151,7 +151,7 @@ impl OpenaiTokens {
         messages: &[Message],
         tools: Option<&[Tool]>,
         counter: &impl TokenCounter,
-    ) -> usize {
+    ) -> u32 {
         let mut req_contents: VecDeque<&str> = VecDeque::new();
         let mut tool_msgs = String::new();
         let mut num_tokens: i32 = 0;
@@ -184,11 +184,11 @@ impl OpenaiTokens {
                 tool_msgs.push('\n');
             }
         }
-        let mut num_tokens: usize = {
+        let mut num_tokens: u32 = {
             if num_tokens < 0 {
                 0
             } else {
-                num_tokens as usize
+                num_tokens as u32
             }
         };
         let concat_contents = req_contents.drain(..).collect::<Vec<&str>>().join(" ");
@@ -197,7 +197,7 @@ impl OpenaiTokens {
         num_tokens
     }
 
-    pub fn response_count(&mut self, choices: &[Choice], counter: &impl TokenCounter) -> usize {
+    pub fn response_count(&mut self, choices: &[Choice], counter: &impl TokenCounter) -> u32 {
         let mut content = String::new();
         for choice in choices {
             if let Some(c) = choice.message.content.as_deref() {
@@ -231,7 +231,7 @@ impl OpenaiTokens {
 /// You can check the test cases for the estimated and actual token usage. run `cargo test --features tiktoken`.
 ///
 /// [`AssistantMessage`]: crate::entity::create_chat_completion::AssistantMessage
-pub fn prompt_tokens(model: &str, messages: &[Message], tools: Option<&[Tool]>) -> usize {
+pub fn prompt_tokens(model: &str, messages: &[Message], tools: Option<&[Tool]>) -> u32 {
     let counter = BpeTokenCounter::new(model);
     let mut openai_tokens = OpenaiTokens::new(None, None);
     openai_tokens.request_count(messages, tools, &counter)
@@ -239,7 +239,7 @@ pub fn prompt_tokens(model: &str, messages: &[Message], tools: Option<&[Tool]>) 
 
 /// completion_tokens calculates the token usage for completion object.
 /// The result is an estimation when response includes [`ToolCall`].
-pub fn completion_tokens(model: &str, choices: &[Choice]) -> usize {
+pub fn completion_tokens(model: &str, choices: &[Choice]) -> u32 {
     let counter = BpeTokenCounter::new(model);
     let mut openai_tokens = OpenaiTokens::new(None, None);
     openai_tokens.response_count(choices, &counter)

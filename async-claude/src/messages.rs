@@ -117,6 +117,6 @@ pub enum StopReason {
 
 #[derive(Debug, Deserialize, Default, Clone, PartialEq, Serialize)]
 pub struct Usage {
-    pub input_tokens: Option<usize>,
-    pub output_tokens: usize,
+    pub input_tokens: Option<u32>,
+    pub output_tokens: u32,
 }
