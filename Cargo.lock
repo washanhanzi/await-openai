@@ -46,7 +46,7 @@ checksum = "27a4bd113ab6da4cd0f521068a6e2ee1065eab54107266a11835d02c8ec86a37"
 
 [[package]]
 name = "async-claude"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -63,7 +63,7 @@ dependencies = [
 
 [[package]]
 name = "async-gemini"
-version = "0.0.5"
+version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -113,7 +113,7 @@ checksum = "0c4b4d0bd25bd0b74681c0ad21497610ce1b7c91b1022cd21c80c6fbdd9476b0"
 
 [[package]]
 name = "await-openai"
-version = "0.20.0"
+version = "0.21.0"
 dependencies = [
  "anyhow",
  "async-claude",

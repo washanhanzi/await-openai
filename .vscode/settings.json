@@ -6,7 +6,8 @@
 		"util",
 		"claude",
 		"gemini",
-		"price"
+		"price",
+		"claude-price"
 	],
 	"rust-analyzer.linkedProjects": [
 		"await-openai/Cargo.toml",
