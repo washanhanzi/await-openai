@@ -87,7 +87,7 @@ pub struct GenerateionConfig {
     /// Specify a lower value for shorter responses and a higher value for potentially longer responses.
     /// Range for gemini-1.0-pro: 1-8192 (default: 8192)
     /// Range for gemini-1.0-pro-vision: 1-2048 (default: 2048)
-    pub max_output_tokens: Option<usize>,
+    pub max_output_tokens: Option<u32>,
     /// Specifies a list of strings that tells the model to stop generating text if one of the strings is encountered in the response. If a string appears multiple times in the response, then the response truncates where it's first encountered. The strings are case-sensitive.
     /// For example, if the following is the returned response when stopSequences isn't specified:
     /// public static string reverse(string myString)
