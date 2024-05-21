@@ -1,6 +1,6 @@
 use crate::entity::chat_completion_object::Usage;
 
-pub fn price(model: &str, usage: Usage) -> f32 {
+pub fn price(model: &str, usage: &Usage) -> f32 {
     let (prompt_price, completion_price) = match model {
         "gpt-4o" => (0.005, 0.015),
         "gpt-4-turbo" => (0.01, 0.03),

@@ -275,12 +275,12 @@ impl From<StopReason> for FinishReason {
 }
 
 #[cfg(feature = "claude-price")]
-pub fn price(model: &str, usage: OpenaiUsage) -> f32 {
+pub fn price(model: &str, usage: &OpenaiUsage) -> f32 {
     let claude_usage = Usage {
         input_tokens: Some(usage.prompt_tokens),
         output_tokens: usage.completion_tokens,
     };
-    async_claude::price(model, claude_usage)
+    async_claude::price(model, &claude_usage)
 }
 
 #[cfg(test)]
