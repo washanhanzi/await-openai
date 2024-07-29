@@ -5,6 +5,19 @@ use serde::{Deserialize, Serialize};
 use super::create_chat_completion::{FinishReason, ToolCall};
 
 #[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
+pub struct ErrResponse {
+    pub error: Err,
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
+pub struct Err {
+    pub message: String,
+    pub r#type: String,
+    pub param: String,
+    pub code: String,
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
 pub struct Response {
     /// A unique identifier for the completion.
     pub id: String,

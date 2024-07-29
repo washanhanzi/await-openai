@@ -11,8 +11,8 @@ use crate::{
             Response as OpenaiResponse, Role as OpenaiRole, Usage as OpenaiUsage,
         },
         create_chat_completion::{
-            Content, ContentPart, FinishReason, Message as OpenaiMessage,
-            RequestBody as OpenaiRequestBody, Stop,
+            AssistantMessage, Content, ContentPart, FinishReason, Message as OpenaiMessage,
+            RequestBody as OpenaiRequestBody, Stop, SystemMessage, UserMessage,
         },
     },
     magi::EventDataParser,
