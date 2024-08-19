@@ -7,7 +7,7 @@ pub struct Request {
     pub model: String,
     pub messages: Vec<Message>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub system: Option<String>,
+    pub system: Option<System>,
     pub max_tokens: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<serde_json::Value>,
@@ -32,11 +32,45 @@ pub struct Tool {
     pub input_schema: serde_json::Value,
 }
 
+#[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum System {
+    Text(String),
+    Blocks(Vec<SystemMessage>),
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
+pub struct SystemMessage {
+    pub r#type: SystemMessageType,
+    pub text: String,
+    pub cache_control: Option<CacheControl>,
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SystemMessageType {
+    #[default]
+    Text,
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
+pub struct CacheControl {
+    pub r#type: CacheControlType,
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum CacheControlType {
+    #[default]
+    Ephemeral,
+}
+
 /// process_messages take arbitrary user input messages and process them to ensure them conform to Anthropic API requirements.
 /// the requirements are:
 /// 1. start with user message
 /// 2. alternate between user and assistant message
 /// 3. the last assistant message cannot have trailing empty space
+///
 /// This function will:
 /// 1. drop any empty message
 /// 2. concatenate consecutive messages of the same role
@@ -146,6 +180,99 @@ mod tests {
                 Request {
                     model: "claude-3-opus-20240229".to_string(),
                     max_tokens: 1024,
+                    messages: vec![Message {
+                        role: Role::User,
+                        content: MessageContent::Text("Hello, world".to_string()),
+                    }],
+                    ..Default::default()
+                },
+            ),
+            (
+                "system messages",
+                r#"{
+                "model": "claude-3-opus-20240229",
+                "max_tokens": 1024,
+                "system":[
+                    {"type":"text","text":"You are a helpful assistant."},
+                    {"type":"text","text":"You are a really helpful assistant."}
+                ],
+                "messages": [
+                    {"role": "user", "content": "Hello, world"}
+                ]
+            }"#,
+                Request {
+                    model: "claude-3-opus-20240229".to_string(),
+                    max_tokens: 1024,
+                    system: Some(System::Blocks(vec![
+                        SystemMessage {
+                            r#type: SystemMessageType::Text,
+                            text: "You are a helpful assistant.".to_string(),
+                            cache_control: None,
+                        },
+                        SystemMessage {
+                            r#type: SystemMessageType::Text,
+                            text: "You are a really helpful assistant.".to_string(),
+                            cache_control: None,
+                        },
+                    ])),
+                    messages: vec![Message {
+                        role: Role::User,
+                        content: MessageContent::Text("Hello, world".to_string()),
+                    }],
+                    ..Default::default()
+                },
+            ),
+            (
+                "system message with cache control",
+                r#"{
+                "model": "claude-3-opus-20240229",
+                "max_tokens": 1024,
+                "system":[
+                    {"type":"text","text":"You are a helpful assistant."},
+                    {"type":"text","text":"You are a really helpful assistant.", "cache_control": {"type":"ephemeral"}}
+                ],
+                "messages": [
+                    {"role": "user", "content": "Hello, world"}
+                ]
+            }"#,
+                Request {
+                    model: "claude-3-opus-20240229".to_string(),
+                    max_tokens: 1024,
+                    system: Some(System::Blocks(vec![
+                        SystemMessage {
+                            r#type: SystemMessageType::Text,
+                            text: "You are a helpful assistant.".to_string(),
+                            cache_control: None,
+                        },
+                        SystemMessage {
+                            r#type: SystemMessageType::Text,
+                            text: "You are a really helpful assistant.".to_string(),
+                            cache_control: Some(CacheControl {
+                                r#type: CacheControlType::Ephemeral,
+                            }),
+                        },
+                    ])),
+                    messages: vec![Message {
+                        role: Role::User,
+                        content: MessageContent::Text("Hello, world".to_string()),
+                    }],
+                    ..Default::default()
+                },
+            ),
+            (
+                "system message string",
+                r#"{
+                "model": "claude-3-opus-20240229",
+                "max_tokens": 1024,
+                "system":"You are a helpful assistant.",
+                "messages": [
+                    {"role": "user", "content": "Hello, world"}
+                ]
+            }"#,
+                Request {
+                    model: "claude-3-opus-20240229".to_string(),
+                    max_tokens: 1024,
+                    system: Some(System::Text("You are a helpful assistant.".to_string())),
                     messages: vec![Message {
                         role: Role::User,
                         content: MessageContent::Text("Hello, world".to_string()),

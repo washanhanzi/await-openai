@@ -5,3 +5,7 @@ default-members = ["await-openai"]
 resolver = "2"
 homepage = "https://github.com/washanhanzi/await-openai"
 repository = "https://github.com/washanhanzi/await-openai"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

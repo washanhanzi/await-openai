@@ -82,7 +82,7 @@ impl From<OpenaiRequestBody> for Request {
                 _ => {}
             }
         }
-        res.system = system_message;
+        res.system = system_message.map(System::Text);
         res.messages = messages;
         res.max_tokens = body.max_tokens.unwrap_or(4000);
         if let Some(stop) = body.stop {
@@ -299,7 +299,7 @@ mod tests {
 
     use anyhow::anyhow;
     use async_claude::messages::{
-        request::Request, ContentBlock, ImageSource, Message, MessageContent, Role,
+        request::Request, ContentBlock, ImageSource, Message, MessageContent, Role, System,
     };
 
     use super::ClaudeEventDataParser;
@@ -312,7 +312,7 @@ mod tests {
                 r#"{"model":"gpt-3.5-turbo","messages":[{"role":"system","content":"You are a helpful assistant."},{"role":"user","content":"Hello!"}]}"#,
                 Request {
                     model: "gpt-3.5-turbo".to_string(),
-                    system: Some("You are a helpful assistant.".to_string()),
+                    system: Some(System::Text("You are a helpful assistant.".to_string())),
                     messages: vec![Message {
                         role: Role::User,
                         content: MessageContent::Text("Hello!".to_string()),
