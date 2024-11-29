@@ -24,12 +24,6 @@ compare to [async-openai](https://github.com/64bit/async-openai)
 
 ## features
 
-### tiktoken
-
-tokens usage calculation for openai api.
-
-support tools tokens usage estimation and image tokens usage calculation.
-
 ### tool
 
 blazing fast serilization compared to [openai-func-enums](https://github.com/frankfralick/openai-func-enums)

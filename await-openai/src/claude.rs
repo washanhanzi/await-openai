@@ -84,7 +84,7 @@ impl From<OpenaiRequestBody> for Request {
         }
         res.system = system_message.map(System::Text);
         res.messages = messages;
-        res.max_tokens = body.max_tokens.unwrap_or(4000);
+        res.max_tokens = body.max_completion_tokens.unwrap_or(4000);
         if let Some(stop) = body.stop {
             match stop {
                 Stop::String(s) => res.stop_sequences = Some(vec![s]),
@@ -164,6 +164,8 @@ impl EventDataParser<Chunk, Chunk, OpenaiResponse> for ClaudeEventDataParser {
             prompt_tokens: self.usage.prompt_tokens,
             completion_tokens: self.usage.completion_tokens,
             total_tokens: self.usage.prompt_tokens + self.usage.completion_tokens,
+            completion_tokens_details: None,
+            prompt_tokens_details: None,
         };
         res
     }
@@ -176,7 +178,8 @@ impl ClaudeEventDataParser {
             choices: vec![],
             created: self.parser.created,
             model: self.parser.model.to_string(),
-            system_fingerprint: None,
+            system_fingerprint: String::new(),
+            service_tier: None,
             object: "chat.completion.chunk".to_string(),
         })
     }
@@ -202,7 +205,8 @@ impl ClaudeEventDataParser {
             }],
             created: self.parser.created,
             model: self.parser.model.to_string(),
-            system_fingerprint: None,
+            system_fingerprint: String::new(),
+            service_tier: None,
             object: "chat.completion.chunk".to_string(),
         })
     }
@@ -364,7 +368,8 @@ mod tests {
                     choices: vec![],
                     created: 0,
                     model: "claude-3-opus-20240229".to_string(),
-                    system_fingerprint: None,
+                    system_fingerprint: "".to_string(),
+                    service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                 }),
                 Some(anyhow!("an error")),
@@ -386,7 +391,8 @@ mod tests {
                     }],
                     created: 0,
                     model: "claude-3-opus-20240229".to_string(),
-                    system_fingerprint: None,
+                    system_fingerprint: "".to_string(),
+                    service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                 }),
                 None,
@@ -408,7 +414,8 @@ mod tests {
                     }],
                     created: 0,
                     model: "claude-3-opus-20240229".to_string(),
-                    system_fingerprint: None,
+                    system_fingerprint: "".to_string(),
+                    service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                 }),
                 None,
@@ -421,7 +428,8 @@ mod tests {
                     choices: vec![],
                     created: 0,
                     model: "claude-3-opus-20240229".to_string(),
-                    system_fingerprint: None,
+                    system_fingerprint: "".to_string(),
+                    service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                 }),
                 None,
@@ -443,7 +451,8 @@ mod tests {
                     }],
                     created: 0,
                     model: "claude-3-opus-20240229".to_string(),
-                    system_fingerprint: None,
+                    system_fingerprint: "".to_string(),
+                    service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                 }),
                 None,
@@ -465,7 +474,8 @@ mod tests {
                     }],
                     created: 0,
                     model: "claude-3-opus-20240229".to_string(),
-                    system_fingerprint: None,
+                    system_fingerprint: "".to_string(),
+                    service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                 }),
                 None,
@@ -478,7 +488,8 @@ mod tests {
                     choices: vec![],
                     created: 0,
                     model: "claude-3-opus-20240229".to_string(),
-                    system_fingerprint: None,
+                    system_fingerprint: "".to_string(),
+                    service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                 }),
                 None,
@@ -491,7 +502,8 @@ mod tests {
                     choices: vec![],
                     created: 0,
                     model: "claude-3-opus-20240229".to_string(),
-                    system_fingerprint: None,
+                    system_fingerprint: "".to_string(),
+                    service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                 }),
                 None,
@@ -542,6 +554,7 @@ mod tests {
         let got_res = parser.response();
         let want_res = OpenaiResponse {
             id: "msg_019LBLYFJ7fG3fuAqzuRQbyi".to_string(),
+            service_tier: None,
             choices: vec![
                 OpenaiResponseChoice {
                     index: 0,
@@ -556,12 +569,14 @@ mod tests {
             ],
             created: 0,
             model: "claude-3-opus-20240229".to_string(),
-            system_fingerprint: None,
+            system_fingerprint: "".to_string(),
             object: "chat.completion.chunk".to_string(),
             usage: Usage {
                 prompt_tokens: 10,
                 completion_tokens: 16,
                 total_tokens: 26,
+                prompt_tokens_details: None,
+                completion_tokens_details: None,
             },
         };
         assert_eq!(got_res.id, want_res.id, "id mismatch");

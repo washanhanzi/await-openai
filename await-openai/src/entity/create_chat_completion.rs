@@ -30,15 +30,23 @@ pub struct RequestBody {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logprobs: Option<bool>,
 
-    /// An integer between 0 and 5 specifying the number of most likely tokens to return at each token position, each with an associated log probability. `logprobs` must be set to `true` if this parameter is used.
+    /// An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. `logprobs` must be set to `true` if this parameter is used.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_logprobs: Option<u8>,
+    pub top_logprobs: Option<u8>, // min: 0, max: 20
 
     /// The maximum number of [tokens](https://platform.openai.com/tokenizer) that can be generated in the chat completion.
     ///
-    /// The total length of input tokens and generated tokens is limited by the model's context length. [Example Python code](https://cookbook.openai.com/examples/how_to_count_tokens_with_tiktoken) for counting tokens.
+    /// The total length of input tokens and generated tokens is limited by the model's context length.
+    /// [Example Python code](https://cookbook.openai.com/examples/how_to_count_tokens_with_tiktoken) for counting tokens.
+    /// 
+    /// This value is now deprecated in favor of max_completion_tokens.
+    #[deprecated(note = "Use max_completion_tokens instead")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_tokens: Option<u32>,
+
+    /// An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_completion_tokens: Option<u32>,
 
     /// How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Keep `n` as `1` to minimize costs.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -101,6 +109,41 @@ pub struct RequestBody {
     /// A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. [Learn more](https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<String>,
+
+    /// Whether or not to store the output of this chat completion request for use in our model distillation or evals products.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub store: Option<bool>, // default: false
+
+    /// Developer-defined tags and values used for filtering completions in the dashboard.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<HashMap<String, serde_json::Value>>,
+
+    /// Whether to enable parallel function calling during tool use.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parallel_tool_calls: Option<bool>, // default: true
+
+    /// Output types that you would like the model to generate for this request.
+    /// Most models are capable of generating text, which is the default: ["text"]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub modalities: Option<Vec<String>>,
+
+    /// Configuration for a Predicted Output, which can greatly improve response times
+    /// when large parts of the model response are known ahead of time.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prediction: Option<PredictionConfig>,
+
+    /// Parameters for audio output. Required when audio output is requested with modalities: ["audio"]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub audio: Option<AudioConfig>,
+
+    /// Specifies the latency tier to use for processing the request.
+    /// This parameter is relevant for customers subscribed to the scale tier service.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub service_tier: Option<String>, // default: "auto"
+
+    /// Options for streaming response. Only set this when you set stream: true.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stream_options: Option<StreamOptions>,
 }
 
 pub struct RequestBodyBuilder {
@@ -201,6 +244,46 @@ impl RequestBodyBuilder {
 
     pub fn user(mut self, user: impl Into<String>) -> Self {
         self.inner.user = Some(user.into());
+        self
+    }
+
+    pub fn store(mut self, store: bool) -> Self {
+        self.inner.store = Some(store);
+        self
+    }
+
+    pub fn metadata(mut self, metadata: HashMap<String, serde_json::Value>) -> Self {
+        self.inner.metadata = Some(metadata);
+        self
+    }
+
+    pub fn parallel_tool_calls(mut self, parallel_tool_calls: bool) -> Self {
+        self.inner.parallel_tool_calls = Some(parallel_tool_calls);
+        self
+    }
+
+    pub fn modalities(mut self, modalities: Vec<String>) -> Self {
+        self.inner.modalities = Some(modalities);
+        self
+    }
+
+    pub fn prediction(mut self, prediction: PredictionConfig) -> Self {
+        self.inner.prediction = Some(prediction);
+        self
+    }
+
+    pub fn audio(mut self, audio: AudioConfig) -> Self {
+        self.inner.audio = Some(audio);
+        self
+    }
+
+    pub fn service_tier(mut self, service_tier: String) -> Self {
+        self.inner.service_tier = Some(service_tier);
+        self
+    }
+
+    pub fn stream_options(mut self, stream_options: StreamOptions) -> Self {
+        self.inner.stream_options = Some(stream_options);
         self
     }
 
@@ -308,7 +391,7 @@ pub enum Content {
     Text(String),
     ///  An array of content parts with a defined type, each can be of type `text` or `image_url`
     /// when passing in images. You can pass multiple images by adding multiple `image_url` content parts.
-    ///  Image input is only supported when using the `gpt-4-visual-preview` model.
+    ///  Image input is only supported when using the `gpt-4-vision-preview` model.
     Array(Vec<ContentPart>),
 }
 
@@ -435,6 +518,7 @@ pub struct FunctionName {
     /// The name of the function to call.
     pub name: String,
 }
+
 #[derive(Debug, Deserialize, Default, Serialize, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "type")]
@@ -442,6 +526,46 @@ pub enum ResponseFormat {
     #[default]
     Text,
     JsonObject,
+    JsonSchema {
+        description: Option<String>,
+        properties: Option<serde_json::Value>,
+        name: String,
+        strict: Option<bool>,
+    },
+}
+
+#[derive(Debug, Deserialize, Default, Serialize, Clone, PartialEq)]
+pub struct StreamOptions {
+    /// If set, an additional chunk will be streamed before the data: [DONE] message.
+    /// The usage field on this chunk shows the token usage statistics for the entire request,
+    /// and the choices field will always be an empty array. All other chunks will also include
+    /// a usage field, but with a null value.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub include_usage: Option<bool>,
+}
+
+#[derive(Debug, Deserialize, Default, Serialize, Clone, PartialEq)]
+pub struct PredictionConfig {
+    /// The predicted output text that you expect the model to generate.
+    pub text: String,
+    /// Optional list of predicted logprobs for each token.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub logprobs: Option<Vec<f32>>,
+}
+
+#[derive(Debug, Deserialize, Default, Serialize, Clone, PartialEq)]
+pub struct AudioConfig {
+    /// The voice to use for text-to-speech.
+    /// Supported voices are: alloy, echo, fable, onyx, nova, and shimmer
+    pub voice: String,
+    /// The audio output format.
+    /// Supported formats are: mp3, opus, aac, and flac
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format: Option<String>,
+    /// The speed of the generated audio.
+    /// Select a value from 0.25 to 4.0. 1.0 is the default.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub speed: Option<f32>,
 }
 
 #[cfg(test)]

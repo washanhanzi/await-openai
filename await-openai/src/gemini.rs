@@ -26,7 +26,7 @@ impl From<OpenaiRequestBody> for GenerateContentRequest {
             }
         }
 
-        let mut contents: Vec<Content> = Vec::with_capacity(body.messages.len());
+        let contents: Vec<Content> = Vec::with_capacity(body.messages.len());
 
         GenerateContentRequest {
             contents: vec![],
@@ -37,7 +37,7 @@ impl From<OpenaiRequestBody> for GenerateContentRequest {
                 top_p: body.top_p,
                 top_k: None,
                 candidate_count: None,
-                max_output_tokens: body.max_tokens,
+                max_output_tokens: body.max_completion_tokens,
                 stop_sequences: stops,
             }),
         }
