@@ -1,8 +1,5 @@
 pub mod entity;
 
-#[cfg(feature = "tiktoken")]
-pub mod tiktoken;
-
 #[cfg(feature = "tool")]
 pub mod tool;
 
@@ -16,5 +13,6 @@ pub mod gemini;
 
 #[cfg(feature = "price")]
 mod price;
+
 #[cfg(feature = "price")]
 pub use price::price;
