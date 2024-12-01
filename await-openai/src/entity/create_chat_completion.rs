@@ -38,7 +38,7 @@ pub struct RequestBody {
     ///
     /// The total length of input tokens and generated tokens is limited by the model's context length.
     /// [Example Python code](https://cookbook.openai.com/examples/how_to_count_tokens_with_tiktoken) for counting tokens.
-    /// 
+    ///
     /// This value is now deprecated in favor of max_completion_tokens.
     #[deprecated(note = "Use max_completion_tokens instead")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -187,8 +187,8 @@ impl RequestBodyBuilder {
         self
     }
 
-    pub fn max_tokens(mut self, max_tokens: u32) -> Self {
-        self.inner.max_tokens = Some(max_tokens);
+    pub fn max_completion_tokens(mut self, max_completion_tokens: u32) -> Self {
+        self.inner.max_completion_tokens = Some(max_completion_tokens);
         self
     }
 
