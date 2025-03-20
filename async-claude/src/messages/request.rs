@@ -23,6 +23,8 @@ pub struct Request {
     pub top_k: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<Tool>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thinking: Option<Thinking>,
 }
 
 #[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
@@ -30,6 +32,13 @@ pub struct Tool {
     pub name: String,
     pub description: Option<String>,
     pub input_schema: serde_json::Value,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
+#[serde(tag = "type")]
+pub enum Thinking {
+    #[serde(rename = "enabled")]
+    Enabled { budget_tokens: u32 },
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
@@ -183,6 +192,34 @@ mod tests {
                     messages: vec![Message {
                         role: Role::User,
                         content: MessageContent::Text("Hello, world".to_string()),
+                    }],
+                    ..Default::default()
+                },
+            ),
+            (
+                "with thinking enabled",
+                r#"{
+                "model": "claude-3-opus-20240229",
+                "max_tokens": 1024,
+                "thinking": {
+                    "type": "enabled",
+                    "budget_tokens": 5000
+                },
+                "messages": [
+                    {"role": "user", "content": "Solve this complex math problem step by step"}
+                ]
+            }"#,
+                Request {
+                    model: "claude-3-opus-20240229".to_string(),
+                    max_tokens: 1024,
+                    thinking: Some(Thinking::Enabled {
+                        budget_tokens: 5000,
+                    }),
+                    messages: vec![Message {
+                        role: Role::User,
+                        content: MessageContent::Text(
+                            "Solve this complex math problem step by step".to_string(),
+                        ),
                     }],
                     ..Default::default()
                 },

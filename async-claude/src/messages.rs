@@ -76,6 +76,21 @@ pub enum ContentBlock {
         tool_use_id: String,
         content: String,
     },
+
+    #[serde(rename = "input_json_delta")]
+    InputJsonDelta { partial_json: String },
+    #[serde(rename = "thinking")]
+    Thinking { 
+        thinking: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        signature: Option<String>,
+    },
+    #[serde(rename = "redacted_thinking")]
+    RedactedThinking { data: String },
+    #[serde(rename = "thinking_delta")]
+    ThinkingDelta { thinking: String },
+    #[serde(rename = "signature_delta")]
+    SignatureDelta { signature: String },
 }
 
 impl ContentBlock {
@@ -91,10 +106,15 @@ impl ContentBlock {
             ContentBlock::ToolUse { id, name, input } => {
                 id.is_empty() || name.is_empty() || input.is_null()
             }
+            ContentBlock::InputJsonDelta { partial_json } => partial_json.is_empty(),
+            ContentBlock::Thinking { thinking, .. } => thinking.trim().is_empty(),
+            ContentBlock::ThinkingDelta { thinking } => thinking.is_empty(),
+            ContentBlock::SignatureDelta { signature } => signature.is_empty(),
             ContentBlock::ToolResult {
                 tool_use_id,
                 content,
-            } => tool_use_id.is_empty() || content.is_empty(),
+            } => tool_use_id.is_empty() || content.trim().is_empty(),
+            ContentBlock::RedactedThinking { data } => data.is_empty(),
         }
     }
 }

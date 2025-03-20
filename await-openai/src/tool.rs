@@ -1,5 +1,5 @@
-use anyhow::{anyhow, Result};
-use schemars::gen::SchemaSettings;
+use anyhow::{Result, anyhow};
+use schemars::r#gen::SchemaSettings;
 pub use schemars::{self, JsonSchema};
 
 use crate::entity::create_chat_completion::{FunctionTool, Tool, ToolType};

@@ -1,6 +1,5 @@
 {
 	"rust-analyzer.cargo.features": [
-		"tiktoken",
 		"tool",
 		"models",
 		"util",

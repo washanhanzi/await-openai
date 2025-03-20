@@ -129,6 +129,8 @@ fn parse_mime_from_base64(s: &str) -> Option<String> {
 pub struct ClaudeEventDataParser {
     usage: OpenaiUsage,
     parser: OpenaiEventDataParser,
+    stop_reason: Option<StopReason>,
+    stop_sequence: Option<String>,
 }
 
 impl Default for ClaudeEventDataParser {
@@ -144,6 +146,8 @@ impl Default for ClaudeEventDataParser {
         Self {
             usage: OpenaiUsage::default(),
             parser: OpenaiEventDataParser::default(),
+            stop_reason: None,
+            stop_sequence: None,
         }
     }
 }
@@ -172,6 +176,21 @@ impl EventDataParser<Chunk, Chunk, OpenaiResponse> for ClaudeEventDataParser {
 }
 
 impl ClaudeEventDataParser {
+    pub fn claude_response(&self) -> async_claude::messages::Response {
+        async_claude::messages::Response {
+            id: self.parser.id.to_string(),
+            r#type: "message".to_string(),
+            role: Role::Assistant,
+            content: vec![],
+            model: self.parser.model.to_string(),
+            stop_reason: None,
+            stop_sequence: None,
+            usage: Usage {
+                input_tokens: Some(self.usage.prompt_tokens),
+                output_tokens: self.usage.completion_tokens,
+            },
+        }
+    }
     pub fn default_chunk(&self) -> Chunk {
         Chunk::Data(ChunkResponse {
             id: self.parser.id.to_string(),
@@ -303,7 +322,7 @@ mod tests {
 
     use anyhow::anyhow;
     use async_claude::messages::{
-        request::Request, ContentBlock, ImageSource, Message, MessageContent, Role, System,
+        ContentBlock, ImageSource, Message, MessageContent, Role, System, request::Request,
     };
 
     use super::ClaudeEventDataParser;

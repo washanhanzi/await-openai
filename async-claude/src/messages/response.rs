@@ -110,6 +110,60 @@ mod tests {
                     },
                 },
             ),
+            (
+                "thinking_block",
+                r#"{
+                  "id": "msg_01Bq9w938a90dw8r",
+                  "type": "message",
+                  "model": "claude-3-opus-20240229",
+                  "stop_reason": "end_turn",
+                  "role": "assistant",
+                  "stop_sequence": null,
+                  "content": [
+                    {
+                      "type": "thinking",
+                      "thinking": "Let me analyze this step by step...",
+                      "signature": "WaUjzkypQ2mUEVM36O2TxuC06KN8xyfbJwyem2dw3URve/op91XWHOEBLLqIOMfFG/UvLEczmEsUjavL...."
+                    },
+                    {
+                      "type": "redacted_thinking",
+                      "data": "EmwKAhgBEgy3va3pzix/LafPsn4aDFIT2Xlxh0L5L8rLVyIwxtE3rAFBa8cr3qpP..."
+                    },
+                    {
+                      "type": "text",
+                      "text": "Based on my analysis..."
+                    }
+                  ],
+                  "usage": {
+                    "input_tokens": 320,
+                    "output_tokens": 150
+                  }
+                }"#,
+                Response {
+                    id: "msg_01Bq9w938a90dw8r".to_string(),
+                    model: "claude-3-opus-20240229".to_string(),
+                    content: vec![
+                        ContentBlock::Thinking {
+                            thinking: "Let me analyze this step by step...".to_string(),
+                            signature: Some("WaUjzkypQ2mUEVM36O2TxuC06KN8xyfbJwyem2dw3URve/op91XWHOEBLLqIOMfFG/UvLEczmEsUjavL....".to_string()),
+                        },
+                        ContentBlock::RedactedThinking {
+                            data: "EmwKAhgBEgy3va3pzix/LafPsn4aDFIT2Xlxh0L5L8rLVyIwxtE3rAFBa8cr3qpP...".to_string(),
+                        },
+                        ContentBlock::Text {
+                            text: "Based on my analysis...".to_string(),
+                        },
+                    ],
+                    role: Role::Assistant,
+                    stop_reason: Some(StopReason::EndTurn),
+                    stop_sequence: None,
+                    r#type: "message".to_string(),
+                    usage: Usage {
+                        input_tokens: Some(320),
+                        output_tokens: 150,
+                    },
+                },
+            ),
         ];
         for (name, json, expected) in tests {
             //test deserialize

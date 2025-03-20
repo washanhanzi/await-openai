@@ -3,8 +3,11 @@ members = ["await-openai", "async-gemini", "async-claude"]
 # Only check / build main crates by default (check all with `--workspace`)
 default-members = ["await-openai"]
 resolver = "2"
+
+[workspace.package]
 homepage = "https://github.com/washanhanzi/await-openai"
 repository = "https://github.com/washanhanzi/await-openai"
+
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
