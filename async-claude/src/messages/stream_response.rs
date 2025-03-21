@@ -99,7 +99,7 @@ pub struct MessageDelta {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::messages::{RequestOnlyContentBlock, Role, ToolUseContentBlock};
+    use crate::messages::{Role, ToolUseContentBlock};
     #[test]
     fn serde() {
         let tests = vec![

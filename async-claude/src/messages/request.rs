@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{
-    BaseContentBlock, ContentBlock, Message, MessageContent, RequestOnlyContentBlock, Role,
-};
+use super::{BaseContentBlock, ContentBlock, Message, MessageContent, Role};
 
 #[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
 pub struct Request {

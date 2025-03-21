@@ -164,7 +164,7 @@ impl ContentBlock {
                     }
                 },
                 RequestOnlyContentBlock::Document { source, id } => {
-                    (source.is_none() || id.is_none())
+                    source.is_none() || id.is_none()
                 }
                 RequestOnlyContentBlock::ToolResult {
                     tool_use_id,

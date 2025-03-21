@@ -1,4 +1,3 @@
-use core::error;
 use std::{collections::VecDeque, convert::Infallible, str::FromStr};
 
 use serde::{Deserialize, Serialize};

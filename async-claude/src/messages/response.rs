@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{ContentBlock, ResponseContentBlock, Role, StopReason, Usage};
+use super::{ResponseContentBlock, Role, StopReason, Usage};
 
 #[derive(Debug, Deserialize, Default, Clone, PartialEq, Serialize)]
 pub struct Response {
@@ -19,8 +19,7 @@ pub struct Response {
 #[cfg(test)]
 mod tests {
     use crate::messages::{
-        BaseContentBlock, ContentBlock, RedactedThinkingContentBlock, RequestOnlyContentBlock,
-        Role, ToolUseContentBlock,
+        BaseContentBlock, RedactedThinkingContentBlock, Role, ToolUseContentBlock,
     };
 
     use super::*;
