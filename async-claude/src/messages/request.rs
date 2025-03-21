@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use super::{ContentBlock, Message, MessageContent, Role};
+use super::{
+    BaseContentBlock, ContentBlock, Message, MessageContent, RequestOnlyContentBlock, Role,
+};
 
 #[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
 pub struct Request {
@@ -31,7 +33,7 @@ pub struct Request {
 pub struct Tool {
     pub name: String,
     pub description: Option<String>,
-    pub input_schema: serde_json::Value,
+    pub input_schema: String,
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
@@ -113,10 +115,13 @@ pub fn process_messages(messages: &[Message]) -> Vec<Message> {
                     }
                     (MessageContent::Blocks(prev), MessageContent::Text(curr)) => {
                         prev.retain(|v| !v.is_empty());
-                        prev.push(ContentBlock::Text { text: curr.clone() });
+                        prev.push(ContentBlock::Base(BaseContentBlock::Text {
+                            text: curr.clone(),
+                        }));
                     }
                     (MessageContent::Text(prev), MessageContent::Blocks(curr)) => {
-                        let mut blocks = vec![ContentBlock::Text { text: prev.clone() }];
+                        let mut blocks =
+                            vec![ContentBlock::Base(BaseContentBlock::Text { text: prev.clone() })];
                         let curr_clone: Vec<_> =
                             curr.clone().into_iter().filter(|v| !v.is_empty()).collect();
                         blocks.extend(curr_clone);
@@ -157,7 +162,7 @@ pub fn process_messages(messages: &[Message]) -> Vec<Message> {
                 }
                 MessageContent::Blocks(blocks) => {
                     for block in blocks {
-                        if let ContentBlock::Text { text } = block {
+                        if let ContentBlock::Base(BaseContentBlock::Text { text }) = block {
                             *text = text.trim_end().to_string();
                         }
                     }
@@ -171,7 +176,10 @@ pub fn process_messages(messages: &[Message]) -> Vec<Message> {
 
 #[cfg(test)]
 mod tests {
-    use crate::messages::{ContentBlock, ImageSource, MessageContent, Role};
+    use crate::messages::{
+        ContentBlock, ImageSource, MessageContent, RequestOnlyContentBlock, Role,
+        ToolUseContentBlock,
+    };
 
     use super::*;
     #[test]
@@ -377,15 +385,15 @@ mod tests {
                     messages: vec![Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Image {
+                            ContentBlock::RequestOnly(RequestOnlyContentBlock::Image {
                                 source: ImageSource::Base64 {
                                     media_type: "image/jpeg".to_string(),
                                     data: "/9j/4AAQSkZJRg...".to_string(),
                                 },
-                            },
-                            ContentBlock::Text {
+                            }),
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "What is in this image?".to_string(),
-                            },
+                            }),
                         ]),
                     }],
                     ..Default::default()
@@ -428,9 +436,9 @@ mod tests {
                 vec![Message {
                     role: Role::Assistant,
                     content: MessageContent::Blocks(vec![
-                        ContentBlock::Text {
+                        ContentBlock::Base(BaseContentBlock::Text {
                             text: "hi".to_string(),
-                        },
+                        }),
                     ]),
                 }],
                 vec![
@@ -441,9 +449,9 @@ mod tests {
                     Message {
                         role: Role::Assistant,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "hi".to_string(),
-                            },
+                            }),
                         ]),
                     },
                 ],
@@ -453,15 +461,15 @@ mod tests {
                 vec![Message {
                     role: Role::Assistant,
                     content: MessageContent::Blocks(vec![
-                        ContentBlock::Text {
+                        ContentBlock::Base(BaseContentBlock::Text {
                             text: "hi".to_string(),
-                        },
-                        ContentBlock::Image {
+                        }),
+                        ContentBlock::RequestOnly(RequestOnlyContentBlock::Image {
                             source: ImageSource::Base64 {
                                 media_type: "img/png".to_string(),
                                 data: "abcs".to_string(),
                             },
-                        },
+                        }),
                     ]),
                 }],
                 vec![
@@ -472,15 +480,15 @@ mod tests {
                     Message {
                         role: Role::Assistant,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "hi".to_string(),
-                            },
-                            ContentBlock::Image {
+                            }),
+                            ContentBlock::RequestOnly(RequestOnlyContentBlock::Image {
                                 source: ImageSource::Base64 {
                                     media_type: "img/png".to_string(),
                                     data: "abcs".to_string(),
                                 },
-                            },
+                            }),
                         ]),
                     },
                 ],
@@ -522,15 +530,15 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "hi".to_string(),
-                            },
-                            ContentBlock::Image {
+                            }),
+                            ContentBlock::RequestOnly(RequestOnlyContentBlock::Image {
                                 source: ImageSource::Base64 {
                                     media_type: "img/png".to_string(),
                                     data: "abcs".to_string(),
                                 },
-                            },
+                            }),
                         ]),
                     },
                 ],
@@ -546,15 +554,15 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "hi".to_string(),
-                            },
-                            ContentBlock::Image {
+                            }),
+                            ContentBlock::RequestOnly(RequestOnlyContentBlock::Image {
                                 source: ImageSource::Base64 {
                                     media_type: "img/png".to_string(),
                                     data: "abcs".to_string(),
                                 },
-                            },
+                            }),
                         ]),
                     },
                 ],
@@ -586,21 +594,21 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "how are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                 ],
                 vec![Message {
                     role: Role::User,
                     content: MessageContent::Blocks(vec![
-                        ContentBlock::Text {
+                        ContentBlock::Base(BaseContentBlock::Text {
                             text: "Hi,".to_string(),
-                        },
-                        ContentBlock::Text {
+                        }),
+                        ContentBlock::Base(BaseContentBlock::Text {
                             text: "how are you".to_string(),
-                        },
+                        }),
                     ]),
                 }],
             ),
@@ -610,9 +618,9 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "how are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -623,12 +631,12 @@ mod tests {
                 vec![Message {
                     role: Role::User,
                     content: MessageContent::Blocks(vec![
-                        ContentBlock::Text {
+                        ContentBlock::Base(BaseContentBlock::Text {
                             text: "how are you".to_string(),
-                        },
-                        ContentBlock::Text {
+                        }),
+                        ContentBlock::Base(BaseContentBlock::Text {
                             text: "Hi,".to_string(),
-                        },
+                        }),
                     ]),
                 }],
             ),
@@ -662,9 +670,9 @@ mod tests {
                     Message {
                         role: Role::Assistant,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "how are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -680,12 +688,12 @@ mod tests {
                     Message {
                         role: Role::Assistant,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "how are you".to_string(),
-                            },
-                            ContentBlock::Text {
+                            }),
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "Hi,".to_string(),
-                            },
+                            }),
                         ]),
                     },
                 ],
@@ -696,9 +704,9 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "how are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -708,24 +716,24 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "who are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                 ],
                 vec![Message {
                     role: Role::User,
                     content: MessageContent::Blocks(vec![
-                        ContentBlock::Text {
+                        ContentBlock::Base(BaseContentBlock::Text {
                             text: "how are you".to_string(),
-                        },
-                        ContentBlock::Text {
+                        }),
+                        ContentBlock::Base(BaseContentBlock::Text {
                             text: "Hi,".to_string(),
-                        },
-                        ContentBlock::Text {
+                        }),
+                        ContentBlock::Base(BaseContentBlock::Text {
                             text: "who are you".to_string(),
-                        },
+                        }),
                     ]),
                 }],
             ),
@@ -735,9 +743,9 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "how are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -747,9 +755,9 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "who are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -760,18 +768,18 @@ mod tests {
                 vec![Message {
                     role: Role::User,
                     content: MessageContent::Blocks(vec![
-                        ContentBlock::Text {
+                        ContentBlock::Base(BaseContentBlock::Text {
                             text: "how are you".to_string(),
-                        },
-                        ContentBlock::Text {
+                        }),
+                        ContentBlock::Base(BaseContentBlock::Text {
                             text: "Hi,".to_string(),
-                        },
-                        ContentBlock::Text {
+                        }),
+                        ContentBlock::Base(BaseContentBlock::Text {
                             text: "who are you".to_string(),
-                        },
-                        ContentBlock::Text {
+                        }),
+                        ContentBlock::Base(BaseContentBlock::Text {
                             text: "ho".to_string(),
-                        },
+                        }),
                     ]),
                 }],
             ),
@@ -781,9 +789,9 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "how are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -793,9 +801,9 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "who are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -807,15 +815,15 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "how are you".to_string(),
-                            },
-                            ContentBlock::Text {
+                            }),
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "Hi,".to_string(),
-                            },
-                            ContentBlock::Text {
+                            }),
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "who are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -830,9 +838,9 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "how are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -842,9 +850,9 @@ mod tests {
                     Message {
                         role: Role::Assistant,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "who are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -856,20 +864,20 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "how are you".to_string(),
-                            },
-                            ContentBlock::Text {
+                            }),
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "Hi,".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
                         role: Role::Assistant,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "who are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -884,9 +892,9 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "how are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -896,9 +904,9 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "who are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -910,9 +918,9 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "how are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -922,12 +930,12 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "who are you".to_string(),
-                            },
-                            ContentBlock::Text {
+                            }),
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "ho".to_string(),
-                            },
+                            }),
                         ]),
                     },
                 ],
@@ -938,9 +946,9 @@ mod tests {
                     Message {
                         role: Role::Assistant,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "how are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -950,9 +958,9 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "who are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -968,23 +976,23 @@ mod tests {
                     Message {
                         role: Role::Assistant,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "how are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "Hi,".to_string(),
-                            },
-                            ContentBlock::Text {
+                            }),
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "who are you".to_string(),
-                            },
-                            ContentBlock::Text {
+                            }),
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "ho".to_string(),
-                            },
+                            }),
                         ]),
                     },
                 ],
@@ -1034,20 +1042,20 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "   ".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "     ".to_string(),
-                            },
-                            ContentBlock::Text {
+                            }),
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "hi".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -1061,9 +1069,9 @@ mod tests {
                     Message {
                         role: Role::Assistant,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "who are you    ".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
@@ -1087,23 +1095,23 @@ mod tests {
                     Message {
                         role: Role::User,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "hi".to_string(),
-                            },
-                            ContentBlock::Text {
+                            }),
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "how are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                     Message {
                         role: Role::Assistant,
                         content: MessageContent::Blocks(vec![
-                            ContentBlock::Text {
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "hi".to_string(),
-                            },
-                            ContentBlock::Text {
+                            }),
+                            ContentBlock::Base(BaseContentBlock::Text {
                                 text: "who are you".to_string(),
-                            },
+                            }),
                         ]),
                     },
                 ],
@@ -1126,21 +1134,7 @@ mod tests {
                 "tools": [{
                     "name": "get_weather",
                     "description": "Get the current weather in a given location",
-                    "input_schema": {
-                        "type": "object",
-                        "properties": {
-                            "location": {
-                                "type": "string",
-                                "description": "The city and state, e.g. San Francisco, CA"
-                            },
-                            "unit": {
-                                "type": "string",
-                                "enum": ["celsius", "fahrenheit"],
-                                "description": "The unit of temperature, either \"celsius\" or \"fahrenheit\""
-                            }
-                        },
-                        "required": ["location"]
-                    }
+                    "input_schema": "{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\",\"description\":\"The city and state, e.g. San Francisco, CA\"},\"unit\":{\"type\":\"string\",\"enum\":[\"celsius\",\"fahrenheit\"],\"description\":\"The unit of temperature, either \\\"celsius\\\" or \\\"fahrenheit\\\"\"}},\"required\":[\"location\"]}"
                 }],
                 "messages": [{"role": "user", "content": "What is the weather like in San Francisco?"}]
             }"#,
@@ -1158,21 +1152,7 @@ mod tests {
                         description: Some(
                             "Get the current weather in a given location".to_string(),
                         ),
-                        input_schema: serde_json::json!({
-                            "type": "object",
-                            "properties": {
-                                "location": {
-                                    "type": "string",
-                                    "description": "The city and state, e.g. San Francisco, CA"
-                                },
-                                "unit": {
-                                    "type": "string",
-                                    "enum": ["celsius", "fahrenheit"],
-                                    "description": "The unit of temperature, either \"celsius\" or \"fahrenheit\""
-                                }
-                            },
-                            "required": ["location"]
-                        }),
+                        input_schema: "{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\",\"description\":\"The city and state, e.g. San Francisco, CA\"},\"unit\":{\"type\":\"string\",\"enum\":[\"celsius\",\"fahrenheit\"],\"description\":\"The unit of temperature, either \\\"celsius\\\" or \\\"fahrenheit\\\"\"}},\"required\":[\"location\"]}".to_string(),
                     }]),
                     ..Default::default()
                 },
@@ -1186,21 +1166,7 @@ mod tests {
                     {
                         "name": "get_weather",
                         "description": "Get the current weather in a given location",
-                        "input_schema": {
-                            "type": "object",
-                            "properties": {
-                                "location": {
-                                    "type": "string",
-                                    "description": "The city and state, e.g. San Francisco, CA"
-                                },
-                                "unit": {
-                                    "type": "string",
-                                    "enum": ["celsius", "fahrenheit"],
-                                    "description": "The unit of temperature, either \"celsius\" or \"fahrenheit\""
-                                }
-                            },
-                            "required": ["location"]
-                        }
+                        "input_schema": "{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\",\"description\":\"The city and state, e.g. San Francisco, CA\"},\"unit\":{\"type\":\"string\",\"enum\":[\"celsius\",\"fahrenheit\"],\"description\":\"The unit of temperature, either \\\"celsius\\\" or \\\"fahrenheit\\\"\"}},\"required\":[\"location\"]}"
                     }
                 ],
                 "messages": [
@@ -1246,21 +1212,7 @@ mod tests {
                         description: Some(
                             "Get the current weather in a given location".to_string(),
                         ),
-                        input_schema: serde_json::json!({
-                            "type": "object",
-                            "properties": {
-                                "location": {
-                                    "type": "string",
-                                    "description": "The city and state, e.g. San Francisco, CA"
-                                },
-                                "unit": {
-                                    "type": "string",
-                                    "enum": ["celsius", "fahrenheit"],
-                                    "description": "The unit of temperature, either \"celsius\" or \"fahrenheit\""
-                                }
-                            },
-                            "required": ["location"]
-                        }),
+                        input_schema: "{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\",\"description\":\"The city and state, e.g. San Francisco, CA\"},\"unit\":{\"type\":\"string\",\"enum\":[\"celsius\",\"fahrenheit\"],\"description\":\"The unit of temperature, either \\\"celsius\\\" or \\\"fahrenheit\\\"\"}},\"required\":[\"location\"]}".to_string(),
                     }]),
                     messages: vec![
                         Message {
@@ -1272,27 +1224,28 @@ mod tests {
                         Message {
                             role: Role::Assistant,
                             content: MessageContent::Blocks(vec![
-                                ContentBlock::Text {
+                                ContentBlock::Base(BaseContentBlock::Text {
                                     text: "<thinking>I need to use get_weather, and the user wants SF, which is likely San Francisco, CA.</thinking>".to_string(),
-                                },
-                                ContentBlock::ToolUse {
-                                    id:"toolu_01A09q90qw90lq917835lq9".to_string(),
-                                     name: "get_weather".to_string(),
-                                     input: serde_json::json!({
-                                    "location": "San Francisco, CA",
-                                    "unit": "celsius"
-                                }) }
+                                }),
+                                ContentBlock::Base(BaseContentBlock::ToolUse(ToolUseContentBlock {
+                                    id: "toolu_01A09q90qw90lq917835lq9".to_string(),
+                                    name: "get_weather".to_string(),
+                                    input: serde_json::json!({
+                                        "location": "San Francisco, CA",
+                                        "unit": "celsius"
+                                    }),
+                                })),
                             ]),
                         },
-                        Message{
-                            role:Role::User,
-                            content:MessageContent::Blocks(vec![
-                                ContentBlock::ToolResult{
-                                    tool_use_id:"toolu_01A09q90qw90lq917835lq9".to_string(),
-                                    content:"15 degrees".to_string()
-                                }
-                            ])
-                        }
+                        Message {
+                            role: Role::User,
+                            content: MessageContent::Blocks(vec![
+                                ContentBlock::RequestOnly(RequestOnlyContentBlock::ToolResult {
+                                    tool_use_id: "toolu_01A09q90qw90lq917835lq9".to_string(),
+                                    content: "15 degrees".to_string(),
+                                }),
+                            ]),
+                        },
                     ],
                     ..Default::default()
                 },

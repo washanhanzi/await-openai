@@ -6,7 +6,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use super::{response::Response, ContentBlock, StopReason, Usage};
+use super::{response::Response, BaseContentBlock, DeltaContentBlock, StopReason, Usage};
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -50,12 +50,12 @@ pub enum EventData {
     },
     ContentBlockStart {
         index: u32,
-        content_block: ContentBlock,
+        content_block: BaseContentBlock,
     },
     Ping,
     ContentBlockDelta {
         index: u32,
-        delta: ContentBlock,
+        delta: DeltaContentBlock,
     },
     ContentBlockStop {
         index: u32,
@@ -81,7 +81,9 @@ impl Display for ErrorData {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             ErrorData::OverloadedError { message } => write!(f, "OverloadedError: {}", message),
-            ErrorData::InternalServerError { message } => write!(f, "InternalServerError: {}", message),
+            ErrorData::InternalServerError { message } => {
+                write!(f, "InternalServerError: {}", message)
+            }
             ErrorData::BadRequestError { message } => write!(f, "BadRequestError: {}", message),
             ErrorData::UnauthorizedError { message } => write!(f, "UnauthorizedError: {}", message),
         }
@@ -97,7 +99,7 @@ pub struct MessageDelta {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::messages::Role;
+    use crate::messages::{RequestOnlyContentBlock, Role, ToolUseContentBlock};
     #[test]
     fn serde() {
         let tests = vec![
@@ -140,7 +142,7 @@ mod tests {
                 EventName::ContentBlockStart,
                 EventData::ContentBlockStart {
                     index: 0,
-                    content_block: ContentBlock::Text {
+                    content_block: BaseContentBlock::Text {
                         text: "".to_string(),
                     },
                 },
@@ -159,7 +161,7 @@ mod tests {
                 EventName::ContentBlockDelta,
                 EventData::ContentBlockDelta {
                     index: 0,
-                    delta: ContentBlock::TextDelta {
+                    delta: DeltaContentBlock::TextDelta {
                         text: "Hello".to_string(),
                     },
                 },
@@ -171,7 +173,7 @@ mod tests {
                 EventName::ContentBlockDelta,
                 EventData::ContentBlockDelta {
                     index: 0,
-                    delta: ContentBlock::TextDelta {
+                    delta: DeltaContentBlock::TextDelta {
                         text: "!".to_string(),
                     },
                 },
@@ -214,11 +216,11 @@ mod tests {
                 EventName::ContentBlockStart,
                 EventData::ContentBlockStart {
                     index: 1,
-                    content_block: ContentBlock::ToolUse {
+                    content_block: BaseContentBlock::ToolUse(ToolUseContentBlock {
                         id: "tu_01AbCdEfGhIjKlMnOpQrStUv".to_string(),
                         name: "weather_forecast".to_string(),
                         input: serde_json::json!({}),
-                    },
+                    }),
                 },
             ),
             (
@@ -228,7 +230,7 @@ mod tests {
                 EventName::ContentBlockDelta,
                 EventData::ContentBlockDelta {
                     index: 1,
-                    delta: ContentBlock::InputJsonDelta {
+                    delta: DeltaContentBlock::InputJsonDelta {
                         partial_json: "{\"location\": \"San Fra\"}".to_string(),
                     },
                 },
@@ -240,7 +242,7 @@ mod tests {
                 EventName::ContentBlockDelta,
                 EventData::ContentBlockDelta {
                     index: 1,
-                    delta: ContentBlock::InputJsonDelta {
+                    delta: DeltaContentBlock::InputJsonDelta {
                         partial_json: "ncisco\"}".to_string(),
                     },
                 },
@@ -252,7 +254,7 @@ mod tests {
                 EventName::ContentBlockStart,
                 EventData::ContentBlockStart {
                     index: 2,
-                    content_block: ContentBlock::Thinking {
+                    content_block: BaseContentBlock::Thinking {
                         thinking: "".to_string(),
                         signature: None,
                     },
@@ -265,8 +267,9 @@ mod tests {
                 EventName::ContentBlockDelta,
                 EventData::ContentBlockDelta {
                     index: 2,
-                    delta: ContentBlock::ThinkingDelta {
-                        thinking: "Let me solve this step by step:\n\n1. First break down 27 * 453".to_string(),
+                    delta: DeltaContentBlock::ThinkingDelta {
+                        thinking: "Let me solve this step by step:\n\n1. First break down 27 * 453"
+                            .to_string(),
                     },
                 },
             ),
@@ -277,8 +280,9 @@ mod tests {
                 EventName::ContentBlockDelta,
                 EventData::ContentBlockDelta {
                     index: 2,
-                    delta: ContentBlock::SignatureDelta {
-                        signature: "EqQBCgIYAhIM1gbcDa9GJwZA2b3hGgxBdjrkzLoky3dl1pkiMOYds...".to_string(),
+                    delta: DeltaContentBlock::SignatureDelta {
+                        signature: "EqQBCgIYAhIM1gbcDa9GJwZA2b3hGgxBdjrkzLoky3dl1pkiMOYds..."
+                            .to_string(),
                     },
                 },
             ),
@@ -317,14 +321,15 @@ mod tests {
             (
                 "content_block_start_tool_result",
                 "content_block_start",
-                r#"{"type":"content_block_start","index":3,"content_block":{"type":"tool_result","tool_use_id":"tu_01AbCdEfGhIjKlMnOpQrStUv","content":"{\"temperature\":22,\"conditions\":\"sunny\",\"location\":\"San Francisco, CA\"}"}}"#,
+                r#"{"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_01T1x1fJ34qAmk2tNTrN7Up6","name":"get_weather","input":{}}}"#,
                 EventName::ContentBlockStart,
                 EventData::ContentBlockStart {
-                    index: 3,
-                    content_block: ContentBlock::ToolResult {
-                        tool_use_id: "tu_01AbCdEfGhIjKlMnOpQrStUv".to_string(),
-                        content: "{\"temperature\":22,\"conditions\":\"sunny\",\"location\":\"San Francisco, CA\"}".to_string(),
-                    },
+                    index: 1,
+                    content_block: BaseContentBlock::ToolUse(ToolUseContentBlock {
+                        id: "toolu_01T1x1fJ34qAmk2tNTrN7Up6".to_string(),
+                        name: "get_weather".to_string(),
+                        input: serde_json::json!({}),
+                    }),
                 },
             ),
         ];

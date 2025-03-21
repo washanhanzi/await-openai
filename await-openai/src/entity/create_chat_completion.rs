@@ -48,6 +48,13 @@ pub struct RequestBody {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_completion_tokens: Option<u32>,
 
+    /// **o-series models only**
+    ///
+    /// Constrains effort on reasoning for reasoning models. Currently supported values are `low`, `medium`, and `high`.
+    /// Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reasoning_effort: Option<String>,
+
     /// How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Keep `n` as `1` to minimize costs.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub n: Option<u8>, // min:1, max: 128, default: 1
@@ -144,6 +151,15 @@ pub struct RequestBody {
     /// Options for streaming response. Only set this when you set stream: true.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stream_options: Option<StreamOptions>,
+
+    /// This tool searches the web for relevant results to use in a response.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub web_search_options: Option<WebSearchOptions>,
+
+    /// Open router compatible field
+    /// https://openrouter.ai/announcements/reasoning-tokens-for-thinking-models
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub include_reasoning: Option<bool>,
 }
 
 pub struct RequestBodyBuilder {
@@ -189,6 +205,11 @@ impl RequestBodyBuilder {
 
     pub fn max_completion_tokens(mut self, max_completion_tokens: u32) -> Self {
         self.inner.max_completion_tokens = Some(max_completion_tokens);
+        self
+    }
+
+    pub fn reasoning_effort(mut self, reasoning_effort: String) -> Self {
+        self.inner.reasoning_effort = Some(reasoning_effort);
         self
     }
 
@@ -287,6 +308,11 @@ impl RequestBodyBuilder {
         self
     }
 
+    pub fn web_search_options(mut self, web_search_options: WebSearchOptions) -> Self {
+        self.inner.web_search_options = Some(web_search_options);
+        self
+    }
+
     pub fn build(self) -> RequestBody {
         self.inner
     }
@@ -333,7 +359,7 @@ pub enum ToolType {
     Function,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, Copy, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum FinishReason {
     #[default]
@@ -343,7 +369,7 @@ pub enum FinishReason {
     ContentFilter,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TopLogprobs {
     /// The token.
     pub token: String,
@@ -568,6 +594,46 @@ pub struct AudioConfig {
     pub speed: Option<f32>,
 }
 
+#[derive(Debug, Deserialize, Default, Serialize, Clone, PartialEq)]
+pub struct WebSearchOptions {
+    /// High level guidance for the amount of context window space to use for the search.
+    /// One of `low`, `medium`, or `high`. `medium` is the default.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub search_context_size: Option<String>,
+
+    /// Approximate location parameters for the search.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_location: Option<WebSearchUserLocation>,
+}
+
+#[derive(Debug, Deserialize, Default, Serialize, Clone, PartialEq)]
+pub struct WebSearchUserLocation {
+    /// The type of location approximation. Always `approximate`.
+    pub r#type: String,
+
+    /// Approximate location parameters for the search.
+    pub approximate: WebSearchUserLocationApproximate,
+}
+
+#[derive(Debug, Deserialize, Default, Serialize, Clone, PartialEq)]
+pub struct WebSearchUserLocationApproximate {
+    /// Free text input for the city of the user, e.g. `San Francisco`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub city: Option<String>,
+
+    /// The two-letter ISO country code of the user, e.g. `US`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub country: Option<String>,
+
+    /// Free text input for the region of the user, e.g. `California`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub region: Option<String>,
+
+    /// The IANA timezone of the user, e.g. `America/Los_Angeles`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timezone: Option<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -594,7 +660,7 @@ mod tests {
         ),
         (
             "image input",
-            r#"{"model": "gpt-4-vision-preview","messages": [{"role": "user","content": [{"type": "text","text": "What's in this image?"},{"type": "image_url","image_url": {"url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"}}]}],"max_tokens": 300}"#,
+            r#"{"model": "gpt-4-vision-preview","messages": [{"role": "user","content": [{"type": "text","text": "What's in this image?"},{"type": "image_url","image_url": {"url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"}}]}],"max_completion_tokens": 300}"#,
             RequestBody{
                 model: "gpt-4-vision-preview".to_string(),
                 messages:vec![
@@ -614,7 +680,7 @@ mod tests {
                         name: None
                     })
                 ],
-                max_tokens: Some(300),
+                max_completion_tokens: Some(300),
                 ..Default::default()
             }
         ),

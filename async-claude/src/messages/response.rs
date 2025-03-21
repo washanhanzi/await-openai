@@ -1,13 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-use super::{ContentBlock, Role, StopReason, Usage};
+use super::{ContentBlock, ResponseContentBlock, Role, StopReason, Usage};
 
 #[derive(Debug, Deserialize, Default, Clone, PartialEq, Serialize)]
 pub struct Response {
     pub id: String,
     pub r#type: String,
     pub role: Role,
-    pub content: Vec<ContentBlock>,
+    pub content: Vec<ResponseContentBlock>,
     pub model: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stop_reason: Option<StopReason>,
@@ -18,7 +18,10 @@ pub struct Response {
 
 #[cfg(test)]
 mod tests {
-    use crate::messages::{ContentBlock, Role};
+    use crate::messages::{
+        BaseContentBlock, ContentBlock, RedactedThinkingContentBlock, RequestOnlyContentBlock,
+        Role, ToolUseContentBlock,
+    };
 
     use super::*;
     #[test]
@@ -48,9 +51,9 @@ mod tests {
                     id: "msg_013Zva2CMHLNnXjNJJKqJ2EF".to_string(),
                     model: "claude-3-opus-20240229".to_string(),
                     content: vec![
-                        ContentBlock::Text {
+                        ResponseContentBlock::Base(BaseContentBlock::Text {
                             text: "Hi! My name is Claude.".to_string(),
-                        },
+                        }),
                     ],
                     role: Role::Assistant,
                     stop_reason: Some(StopReason::EndTurn),
@@ -92,13 +95,17 @@ mod tests {
                     id: "msg_01Aq9w938a90dw8q".to_string(),
                     model: "claude-3-opus-20240229".to_string(),
                     content: vec![
-                        ContentBlock::Text {
+                        ResponseContentBlock::Base(BaseContentBlock::Text {
                             text: "<thinking>I need to call the get_weather function, and the user wants SF, which is likely San Francisco, CA.</thinking>".to_string(),
-                        },
-                        ContentBlock::ToolUse {
-                             id: "toolu_01A09q90qw90lq917835lq9".to_string(),
-                             name: "get_weather".to_string(), input:serde_json::json!({"location": "San Francisco, CA", "unit": "celsius"})
-                            }
+                        }),
+                        ResponseContentBlock::Base(BaseContentBlock::ToolUse(ToolUseContentBlock {
+                            id: "toolu_01A09q90qw90lq917835lq9".to_string(),
+                            name: "get_weather".to_string(),
+                            input: serde_json::json!({
+                                "location": "San Francisco, CA",
+                                "unit": "celsius"
+                            }),
+                        })),
                     ],
                     role: Role::Assistant,
                     stop_reason: Some(StopReason::ToolUse),
@@ -143,16 +150,16 @@ mod tests {
                     id: "msg_01Bq9w938a90dw8r".to_string(),
                     model: "claude-3-opus-20240229".to_string(),
                     content: vec![
-                        ContentBlock::Thinking {
+                        ResponseContentBlock::Base(BaseContentBlock::Thinking {
                             thinking: "Let me analyze this step by step...".to_string(),
                             signature: Some("WaUjzkypQ2mUEVM36O2TxuC06KN8xyfbJwyem2dw3URve/op91XWHOEBLLqIOMfFG/UvLEczmEsUjavL....".to_string()),
-                        },
-                        ContentBlock::RedactedThinking {
+                        }),
+                        ResponseContentBlock::RedactedThinking(RedactedThinkingContentBlock::RedactedThinking {
                             data: "EmwKAhgBEgy3va3pzix/LafPsn4aDFIT2Xlxh0L5L8rLVyIwxtE3rAFBa8cr3qpP...".to_string(),
-                        },
-                        ContentBlock::Text {
+                        }),
+                        ResponseContentBlock::Base(BaseContentBlock::Text {
                             text: "Based on my analysis...".to_string(),
-                        },
+                        }),
                     ],
                     role: Role::Assistant,
                     stop_reason: Some(StopReason::EndTurn),
