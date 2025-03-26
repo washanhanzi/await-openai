@@ -351,6 +351,7 @@ impl ClaudeEventDataParser {
             system_fingerprint: String::new(),
             service_tier: None,
             object: "chat.completion.chunk".to_string(),
+            usage: None,
         })
     }
 
@@ -380,6 +381,7 @@ impl ClaudeEventDataParser {
             system_fingerprint: String::new(),
             service_tier: None,
             object: "chat.completion.chunk".to_string(),
+            usage: None,
         })
     }
 
@@ -514,6 +516,7 @@ mod tests {
                     system_fingerprint: "".to_string(),
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
+                    usage: None,
                 })),
             ),
             (
@@ -543,6 +546,7 @@ mod tests {
                     system_fingerprint: "".to_string(),
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
+                    usage: None,
                 })),
             ),
             (
@@ -566,6 +570,7 @@ mod tests {
                     system_fingerprint: "".to_string(),
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
+                    usage: None,
                 })),
             ),
             (
@@ -594,6 +599,7 @@ mod tests {
                     system_fingerprint: "".to_string(),
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
+                    usage: None,
                 })),
             ),
             ("data8", r#"{"type": "message_stop"}"#, Some(Chunk::Done)),
@@ -704,6 +710,7 @@ mod tests {
                     system_fingerprint: "".to_string(),
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
+                    usage: None,
                 })),
                 None,
             ),
@@ -734,6 +741,7 @@ mod tests {
                     system_fingerprint: "".to_string(),
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
+                    usage: None,
                 })),
                 None,
             ),
@@ -757,6 +765,7 @@ mod tests {
                     system_fingerprint: "".to_string(),
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
+                    usage: None,
                 })),
                 None,
             ),
@@ -780,6 +789,7 @@ mod tests {
                     system_fingerprint: "".to_string(),
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
+                    usage: None,
                 })),
                 None,
             ),
@@ -805,6 +815,7 @@ mod tests {
                     system_fingerprint: "".to_string(),
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
+                    usage: None,
                 })),
                 None,
             ),
@@ -873,6 +884,7 @@ mod tests {
                     system_fingerprint: "".to_string(),
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
+                    usage: None,
                 })),
                 None,
             ),

@@ -57,13 +57,18 @@ pub struct ChunkResponse {
     /// made that might impact determinism.
     pub system_fingerprint: String,
 
-    /// The object type, which is always "text_completion"
+    /// The object type, which is always "chat.completion.chunk"
     pub object: String,
 
     /// The service tier used for processing the request.
     /// This field is only included if the service_tier parameter is specified in the request.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub service_tier: Option<ServiceTier>,
+
+    /// Usage statistics for the completion request.
+    /// Note that usage statistics are only included in the final chunk.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub usage: Option<Usage>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]
@@ -374,6 +379,7 @@ mod tests {
                         ..Default::default()
                     }],
                     service_tier: None,
+                    usage: None,
                 },
             ),
             (
@@ -394,6 +400,7 @@ mod tests {
                         },
                         ..Default::default()
                     }],
+                    usage: None,
                 },
             ),
             (
@@ -414,6 +421,7 @@ mod tests {
                         finish_reason: Some(FinishReason::Stop),
                         ..Default::default()
                     }],
+                    usage: None,
                 },
             ),
             (
@@ -444,6 +452,7 @@ mod tests {
                         },
                         ..Default::default()
                     }],
+                    usage: None,
                 },
             ),
         ];
