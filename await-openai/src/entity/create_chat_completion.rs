@@ -53,7 +53,7 @@ pub struct RequestBody {
     /// Constrains effort on reasoning for reasoning models. Currently supported values are `low`, `medium`, and `high`.
     /// Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub reasoning_effort: Option<String>,
+    pub reasoning_effort: Option<ReasoningEffort>,
 
     /// How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Keep `n` as `1` to minimize costs.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -159,7 +159,7 @@ pub struct RequestBody {
     /// Open router compatible field
     /// https://openrouter.ai/announcements/reasoning-tokens-for-thinking-models
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub include_reasoning: Option<bool>,
+    pub reasoning: Option<OpenRouterReasoning>,
 }
 
 pub struct RequestBodyBuilder {
@@ -208,7 +208,7 @@ impl RequestBodyBuilder {
         self
     }
 
-    pub fn reasoning_effort(mut self, reasoning_effort: String) -> Self {
+    pub fn reasoning_effort(mut self, reasoning_effort: ReasoningEffort) -> Self {
         self.inner.reasoning_effort = Some(reasoning_effort);
         self
     }
@@ -632,6 +632,20 @@ pub struct WebSearchUserLocationApproximate {
     /// The IANA timezone of the user, e.g. `America/Los_Angeles`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timezone: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ReasoningEffort {
+    High,
+    Medium,
+    Low,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub struct OpenRouterReasoning {
+    effort: ReasoningEffort,
+    exclude: bool,
 }
 
 #[cfg(test)]
