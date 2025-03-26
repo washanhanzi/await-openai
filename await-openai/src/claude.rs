@@ -1,15 +1,11 @@
-use std::{
-    str::FromStr,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 
 use crate::{
     entity::{
         chat_completion_chunk::{
-            Choice, Chunk, ChunkResponse, DeltaMessage, OpenaiEventDataParser, ToolCallChunk,
-            ToolCallFunctionObjChunk,
+            Choice, Chunk, ChunkResponse, DeltaMessage, OpenaiEventDataParser,
         },
         chat_completion_object::{
             Response as OpenaiResponse, Role as OpenaiRole, Usage as OpenaiUsage,
@@ -348,7 +344,7 @@ impl ClaudeEventDataParser {
             choices: vec![],
             created: self.parser.created,
             model: self.parser.model.to_string(),
-            system_fingerprint: String::new(),
+            system_fingerprint: None,
             service_tier: None,
             object: "chat.completion.chunk".to_string(),
             usage: None,
@@ -378,7 +374,7 @@ impl ClaudeEventDataParser {
             }],
             created: self.parser.created,
             model: self.parser.model.to_string(),
-            system_fingerprint: String::new(),
+            system_fingerprint: None,
             service_tier: None,
             object: "chat.completion.chunk".to_string(),
             usage: None,
@@ -513,7 +509,7 @@ mod tests {
                     }],
                     created: 0,
                     model: "claude-3-7-sonnet-20250219".to_string(),
-                    system_fingerprint: "".to_string(),
+                    system_fingerprint: None,
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                     usage: None,
@@ -543,7 +539,7 @@ mod tests {
                     }],
                     created: 0,
                     model: "claude-3-7-sonnet-20250219".to_string(),
-                    system_fingerprint: "".to_string(),
+                    system_fingerprint: None,
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                     usage: None,
@@ -567,7 +563,7 @@ mod tests {
                     }],
                     created: 0,
                     model: "claude-3-7-sonnet-20250219".to_string(),
-                    system_fingerprint: "".to_string(),
+                    system_fingerprint: None,
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                     usage: None,
@@ -596,7 +592,7 @@ mod tests {
                     }],
                     created: 0,
                     model: "claude-3-7-sonnet-20250219".to_string(),
-                    system_fingerprint: "".to_string(),
+                    system_fingerprint: None,
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                     usage: None,
@@ -631,7 +627,7 @@ mod tests {
                 ),
             ],
             model: "claude-3-7-sonnet-20250219".to_string(),
-            stop_reason: None,
+            stop_reason: Some(async_claude::messages::StopReason::EndTurn),
             stop_sequence: None,
             usage: async_claude::messages::Usage {
                 input_tokens: Some(25),
@@ -653,7 +649,7 @@ mod tests {
             object: "chat.completion".to_string(),
             created: created_timestamp,
             model: "claude-3-7-sonnet-20250219".to_string(),
-            system_fingerprint: String::new(),
+            system_fingerprint: None,
             choices: vec![
                 crate::entity::chat_completion_object::Choice {
                     index: 0,
@@ -707,7 +703,7 @@ mod tests {
                     }],
                     created: 0,
                     model: "claude-3-haiku-20240307".to_string(),
-                    system_fingerprint: "".to_string(),
+                    system_fingerprint: None,
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                     usage: None,
@@ -738,7 +734,7 @@ mod tests {
                     }],
                     created: 0,
                     model: "claude-3-haiku-20240307".to_string(),
-                    system_fingerprint: "".to_string(),
+                    system_fingerprint: None,
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                     usage: None,
@@ -762,7 +758,7 @@ mod tests {
                     }],
                     created: 0,
                     model: "claude-3-haiku-20240307".to_string(),
-                    system_fingerprint: "".to_string(),
+                    system_fingerprint: None,
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                     usage: None,
@@ -786,7 +782,7 @@ mod tests {
                     }],
                     created: 0,
                     model: "claude-3-haiku-20240307".to_string(),
-                    system_fingerprint: "".to_string(),
+                    system_fingerprint: None,
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                     usage: None,
@@ -812,7 +808,7 @@ mod tests {
                     }],
                     created: 0,
                     model: "claude-3-haiku-20240307".to_string(),
-                    system_fingerprint: "".to_string(),
+                    system_fingerprint: None,
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                     usage: None,
@@ -881,7 +877,7 @@ mod tests {
                     }],
                     created: 0,
                     model: "claude-3-haiku-20240307".to_string(),
-                    system_fingerprint: "".to_string(),
+                    system_fingerprint: None,
                     service_tier: None,
                     object: "chat.completion.chunk".to_string(),
                     usage: None,
@@ -959,7 +955,7 @@ mod tests {
             object: "chat.completion".to_string(),
             created: created_timestamp,
             model: "claude-3-haiku-20240307".to_string(),
-            system_fingerprint: String::new(),
+            system_fingerprint: None,
             choices: vec![
                 crate::entity::chat_completion_object::Choice {
                     index: 0,

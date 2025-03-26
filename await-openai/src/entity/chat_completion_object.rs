@@ -34,7 +34,7 @@ pub struct Response {
     /// This fingerprint represents the backend configuration that the model runs with.
     /// Can be used in conjunction with the seed request parameter to understand when backend changes have been
     /// made that might impact determinism.
-    pub system_fingerprint: String,
+    pub system_fingerprint: Option<String>,
     /// The object type, which is always chat.completion
     pub object: String,
     /// Usage statistics for the completion request.
@@ -289,7 +289,7 @@ mod tests {
                     object: "chat.completion".to_string(),
                     created: 1677652288,
                     model: "gpt-3.5-turbo-0613".to_string(),
-                    system_fingerprint: "fp_44709d6fcb".to_string(),
+                    system_fingerprint: Some("fp_44709d6fcb".to_string()),
                     choices: vec![Choice {
                         index: 0,
                         message: Message {
@@ -355,7 +355,7 @@ mod tests {
                     object: "chat.completion".to_string(),
                     created: 1699896916,
                     model: "gpt-3.5-turbo-0613".to_string(),
-                    system_fingerprint: "fp_6b68a8204b".to_string(),
+                    system_fingerprint: Some("fp_6b68a8204b".to_string()),
                     choices: vec![Choice {
                         index: 0,
                         message: Message {
@@ -471,7 +471,7 @@ mod tests {
                     object: "chat.completion".to_string(),
                     created: 1702685778,
                     model: "gpt-3.5-turbo-0613".to_string(),
-                    system_fingerprint: "fp_44709d6fcb".to_string(),
+                    system_fingerprint: Some("fp_44709d6fcb".to_string()),
                     choices: vec![Choice {
                         index: 0,
                         message: Message {
@@ -599,7 +599,7 @@ mod tests {
                     object: "chat.completion".to_string(),
                     created: 1728933352,
                     model: "gpt-4o-2024-08-06".to_string(),
-                    system_fingerprint: "fp_6b68a8204b".to_string(),
+                    system_fingerprint: Some("fp_6b68a8204b".to_string()),
                     choices: vec![Choice {
                         index: 0,
                         message: Message {

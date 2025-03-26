@@ -51,11 +51,13 @@ pub struct ChunkResponse {
 
     /// The model used for completion.
     pub model: String,
+
     /// This fingerprint represents the backend configuration that the model runs with.
     ///
     /// Can be used in conjunction with the `seed` request parameter to understand when backend changes have been
     /// made that might impact determinism.
-    pub system_fingerprint: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub system_fingerprint: Option<String>,
 
     /// The object type, which is always "chat.completion.chunk"
     pub object: String,
@@ -144,7 +146,7 @@ pub struct OpenaiEventDataParser {
     pub object: String,
     pub created: u64,
     pub model: String,
-    system_fingerprint: String,
+    system_fingerprint: Option<String>,
     tool_calls: VecDeque<ToolCall>,
     pub content: String,
     refusal: Option<String>,
@@ -235,7 +237,7 @@ impl EventDataParser<Chunk> for OpenaiEventDataParser {
             object: self.object,
             created: self.created,
             model: self.model,
-            system_fingerprint: self.system_fingerprint,
+            system_fingerprint: self.system_fingerprint.clone(),
             service_tier: None,
             choices: vec![
                 ChatCompletionChoice {
@@ -265,7 +267,7 @@ impl OpenaiEventDataParser {
         self.model = model.to_string();
     }
 
-    pub fn set_system_fingerprint(&mut self, system_fingerprint: String) {
+    pub fn set_system_fingerprint(&mut self, system_fingerprint: Option<String>) {
         self.system_fingerprint = system_fingerprint;
     }
 
@@ -299,7 +301,7 @@ impl OpenaiEventDataParser {
         self.object = response.object.to_string();
         self.created = response.created;
         self.model = response.model.to_string();
-        self.system_fingerprint = response.system_fingerprint.to_string();
+        self.system_fingerprint = response.system_fingerprint.clone();
     }
 
     fn parse_tool_call_chunk(
@@ -368,7 +370,7 @@ mod tests {
                     object: "chat.completion.chunk".to_string(),
                     created: 1694268190,
                     model: "gpt-3.5-turbo-0613".to_string(),
-                    system_fingerprint: "fp_44709d6fcb".to_string(),
+                    system_fingerprint: Some("fp_44709d6fcb".to_string()),
                     choices: vec![Choice {
                         index: 0,
                         delta: DeltaMessage {
@@ -390,7 +392,7 @@ mod tests {
                     object: "chat.completion.chunk".to_string(),
                     created: 1694268190,
                     model: "gpt-3.5-turbo-0613".to_string(),
-                    system_fingerprint: "fp_44709d6fcb".to_string(),
+                    system_fingerprint: Some("fp_44709d6fcb".to_string()),
                     service_tier: None,
                     choices: vec![Choice {
                         index: 0,
@@ -411,7 +413,7 @@ mod tests {
                     object: "chat.completion.chunk".to_string(),
                     created: 1694268190,
                     model: "gpt-3.5-turbo-0613".to_string(),
-                    system_fingerprint: "fp_44709d6fcb".to_string(),
+                    system_fingerprint: Some("fp_44709d6fcb".to_string()),
                     service_tier: None,
                     choices: vec![Choice {
                         index: 0,
@@ -432,7 +434,7 @@ mod tests {
                     object: "chat.completion.chunk".to_string(),
                     created: 1708612360,
                     model: "gpt-3.5-turbo-0125".to_string(),
-                    system_fingerprint: "fp_cbdb91ce3f".to_string(),
+                    system_fingerprint: Some("fp_cbdb91ce3f".to_string()),
                     service_tier: None,
                     choices: vec![Choice {
                         index: 0,
@@ -626,7 +628,7 @@ mod tests {
                 object: "chat.completion.chunk".to_string(),
                 created: 1710744883,
                 model: "gpt-3.5-turbo-0125".to_string(),
-                system_fingerprint: "fp_4f2ebda25a".to_string(),
+                system_fingerprint: Some("fp_4f2ebda25a".to_string()),
                 service_tier: None,
                 choices: vec![
                     ChatCompletionChoice {
@@ -874,7 +876,7 @@ mod tests {
             object: "chat.completion.chunk".to_string(),
             created: 1710814154,
             model: "gpt-3.5-turbo-0125".to_string(),
-            system_fingerprint: "fp_4f2ebda25a".to_string(),
+            system_fingerprint: Some("fp_4f2ebda25a".to_string()),
             service_tier: None,
             choices: vec![ChatCompletionChoice {
                 index: 0,
