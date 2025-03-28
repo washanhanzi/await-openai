@@ -252,6 +252,15 @@ pub struct ChatCompletionAudio {
     pub transcript: String,
 }
 
+impl Response {
+    pub fn first_assistant_message(&self) -> Option<&Message> {
+        self.choices
+            .iter()
+            .find(|choice| choice.message.role == Role::Assistant)
+            .map(|choice| &choice.message)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::entity::create_chat_completion::{ToolCallFunction, ToolCallFunctionObj};

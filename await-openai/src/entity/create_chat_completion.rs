@@ -183,6 +183,22 @@ impl RequestBodyBuilder {
         self
     }
 
+    pub fn push_user_message(mut self, message: impl Into<String>) -> Self {
+        self.inner.messages.push(Message::User(UserMessage {
+            content: Content::Text(message.into()),
+            name: None,
+        }));
+        self
+    }
+
+    pub fn push_system_message(mut self, message: impl Into<String>) -> Self {
+        self.inner.messages.push(Message::System(SystemMessage {
+            content: message.into(),
+            ..Default::default()
+        }));
+        self
+    }
+
     pub fn frequency_penalty(mut self, frequency_penalty: f32) -> Self {
         self.inner.frequency_penalty = Some(frequency_penalty);
         self
