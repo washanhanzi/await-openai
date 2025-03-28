@@ -162,6 +162,36 @@ pub struct RequestBody {
     pub reasoning: Option<OpenRouterReasoning>,
 }
 
+impl RequestBody {
+    pub fn first_user_message(&self) -> Option<&Message> {
+        self.messages
+            .iter()
+            .find(|message| matches!(message, Message::User(_)))
+    }
+
+    pub fn first_user_message_text(&self) -> Option<String> {
+        self.messages
+            .iter()
+            .find(|message| matches!(message, Message::User(_)))
+            .and_then(|message| match message {
+                Message::User(user_message) => match &user_message.content {
+                    Content::Text(text) => Some(text.clone()),
+                    Content::Array(array) => Some(
+                        array
+                            .iter()
+                            .filter_map(|content_part| match content_part {
+                                ContentPart::Text(text_part) => Some(text_part.text.clone()),
+                                _ => None,
+                            })
+                            .collect::<Vec<String>>()
+                            .join(""),
+                    ),
+                },
+                _ => None,
+            })
+    }
+}
+
 pub struct RequestBodyBuilder {
     inner: RequestBody,
 }
@@ -795,5 +825,71 @@ mod tests {
             let actual: RequestBody = serde_json::from_str(&serialized).unwrap();
             assert_eq!(actual, expected, "serialize test failed: {}", name);
         }
+    }
+
+    #[test]
+    fn test_first_user_message_text() {
+        // Test with a simple text content
+        let request_body = RequestBody {
+            model: "gpt-3.5-turbo".to_string(),
+            messages: vec![
+                Message::System(SystemMessage {
+                    content: "You are a helpful assistant.".to_string(),
+                    ..Default::default()
+                }),
+                Message::User(UserMessage {
+                    content: Content::Text("Hello, how are you?".to_string()),
+                    name: None,
+                }),
+            ],
+            ..Default::default()
+        };
+        assert_eq!(
+            request_body.first_user_message_text(),
+            Some("Hello, how are you?".to_string())
+        );
+
+        // Test with array content
+        let request_body_with_array = RequestBody {
+            model: "gpt-4-vision-preview".to_string(),
+            messages: vec![
+                Message::User(UserMessage {
+                    content: Content::Array(vec![
+                        ContentPart::Text(TextContentPart {
+                            text: "What's in this image?".to_string(),
+                        }),
+                        ContentPart::Text(TextContentPart {
+                            text: " Please describe it.".to_string(),
+                        }),
+                        ContentPart::Image(ImageContentPart {
+                            dimensions: None,
+                            image_url: ImageUrl {
+                                url: "https://example.com/image.jpg".to_string(),
+                                detail: None,
+                            },
+                        }),
+                    ]),
+                    name: None,
+                }),
+            ],
+            ..Default::default()
+        };
+        assert_eq!(
+            request_body_with_array.first_user_message_text(),
+            Some("What's in this image? Please describe it.".to_string())
+        );
+
+        // Test with no user message
+        let request_body_no_user = RequestBody {
+            model: "gpt-3.5-turbo".to_string(),
+            messages: vec![
+                Message::System(SystemMessage {
+                    content: "You are a helpful assistant.".to_string(),
+                    ..Default::default()
+                }),
+            ],
+            ..Default::default()
+        };
+        assert_eq!(request_body_no_user.first_user_message_text(), None);
     }
 }

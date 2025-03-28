@@ -259,6 +259,16 @@ impl Response {
             .find(|choice| choice.message.role == Role::Assistant)
             .map(|choice| &choice.message)
     }
+
+    pub fn first_assistant_message_text(&self) -> Option<String> {
+        self.first_assistant_message()
+            .and_then(|message| message.content.to_owned())
+    }
+
+    pub fn first_assistant_message_reasoning_text(&self) -> Option<String> {
+        self.first_assistant_message()
+            .and_then(|message| message.reasoning.to_owned())
+    }
 }
 
 #[cfg(test)]
