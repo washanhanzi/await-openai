@@ -229,6 +229,17 @@ impl RequestBodyBuilder {
         self
     }
 
+    pub fn prepend_system_message(mut self, message: impl Into<String>) -> Self {
+        self.inner.messages.insert(
+            0,
+            Message::System(SystemMessage {
+                content: message.into(),
+                ..Default::default()
+            }),
+        );
+        self
+    }
+
     pub fn frequency_penalty(mut self, frequency_penalty: f32) -> Self {
         self.inner.frequency_penalty = Some(frequency_penalty);
         self
