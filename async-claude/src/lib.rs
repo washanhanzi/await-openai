@@ -4,3 +4,6 @@ pub mod messages;
 mod price;
 #[cfg(feature = "price")]
 pub use price::price;
+
+#[cfg(feature = "tool")]
+pub mod tool;

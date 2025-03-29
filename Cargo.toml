@@ -12,3 +12,13 @@ repository = "https://github.com/washanhanzi/await-openai"
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+schemars = "0.8"
+anyhow = "1.0"
+async-claude = { path = "./async-claude", version = "0.12" }
+async-gemini = { path = "./async-gemini", version = "0.1" }
+paste = "1"
+tracing = "0.1"
+
+# dev dependencies
+criterion = { version = "0.5", features = ["html_reports"] }
+async-openai = "0.26"

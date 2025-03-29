@@ -31,7 +31,7 @@ pub struct Request {
 pub struct Tool {
     pub name: String,
     pub description: Option<String>,
-    pub input_schema: String,
+    pub input_schema: serde_json::Value,
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
@@ -1132,7 +1132,21 @@ mod tests {
                 "tools": [{
                     "name": "get_weather",
                     "description": "Get the current weather in a given location",
-                    "input_schema": "{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\",\"description\":\"The city and state, e.g. San Francisco, CA\"},\"unit\":{\"type\":\"string\",\"enum\":[\"celsius\",\"fahrenheit\"],\"description\":\"The unit of temperature, either \\\"celsius\\\" or \\\"fahrenheit\\\"\"}},\"required\":[\"location\"]}"
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "location": {
+                                "type": "string",
+                                "description": "The city and state, e.g. San Francisco, CA"
+                            },
+                            "unit": {
+                                "type": "string",
+                                "enum": ["celsius", "fahrenheit"],
+                                "description": "The unit of temperature, either \"celsius\" or \"fahrenheit\""
+                            }
+                        },
+                        "required": ["location"]
+                    }
                 }],
                 "messages": [{"role": "user", "content": "What is the weather like in San Francisco?"}]
             }"#,
@@ -1150,7 +1164,21 @@ mod tests {
                         description: Some(
                             "Get the current weather in a given location".to_string(),
                         ),
-                        input_schema: "{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\",\"description\":\"The city and state, e.g. San Francisco, CA\"},\"unit\":{\"type\":\"string\",\"enum\":[\"celsius\",\"fahrenheit\"],\"description\":\"The unit of temperature, either \\\"celsius\\\" or \\\"fahrenheit\\\"\"}},\"required\":[\"location\"]}".to_string(),
+                        input_schema: serde_json::json!({
+                            "type": "object",
+                            "properties": {
+                                "location": {
+                                    "type": "string",
+                                    "description": "The city and state, e.g. San Francisco, CA"
+                                },
+                                "unit": {
+                                    "type": "string",
+                                    "enum": ["celsius", "fahrenheit"],
+                                    "description": "The unit of temperature, either \"celsius\" or \"fahrenheit\""
+                                }
+                            },
+                            "required": ["location"]
+                        }),
                     }]),
                     ..Default::default()
                 },
@@ -1164,7 +1192,21 @@ mod tests {
                     {
                         "name": "get_weather",
                         "description": "Get the current weather in a given location",
-                        "input_schema": "{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\",\"description\":\"The city and state, e.g. San Francisco, CA\"},\"unit\":{\"type\":\"string\",\"enum\":[\"celsius\",\"fahrenheit\"],\"description\":\"The unit of temperature, either \\\"celsius\\\" or \\\"fahrenheit\\\"\"}},\"required\":[\"location\"]}"
+                        "input_schema": {
+                            "type": "object",
+                            "properties": {
+                                "location": {
+                                    "type": "string",
+                                    "description": "The city and state, e.g. San Francisco, CA"
+                                },
+                                "unit": {
+                                    "type": "string",
+                                    "enum": ["celsius", "fahrenheit"],
+                                    "description": "The unit of temperature, either \"celsius\" or \"fahrenheit\""
+                                }
+                            },
+                            "required": ["location"]
+                        }
                     }
                 ],
                 "messages": [
@@ -1210,7 +1252,21 @@ mod tests {
                         description: Some(
                             "Get the current weather in a given location".to_string(),
                         ),
-                        input_schema: "{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\",\"description\":\"The city and state, e.g. San Francisco, CA\"},\"unit\":{\"type\":\"string\",\"enum\":[\"celsius\",\"fahrenheit\"],\"description\":\"The unit of temperature, either \\\"celsius\\\" or \\\"fahrenheit\\\"\"}},\"required\":[\"location\"]}".to_string(),
+                        input_schema: serde_json::json!({
+                            "type": "object",
+                            "properties": {
+                                "location": {
+                                    "type": "string",
+                                    "description": "The city and state, e.g. San Francisco, CA"
+                                },
+                                "unit": {
+                                    "type": "string",
+                                    "enum": ["celsius", "fahrenheit"],
+                                    "description": "The unit of temperature, either \"celsius\" or \"fahrenheit\""
+                                }
+                            },
+                            "required": ["location"]
+                        }),
                     }]),
                     messages: vec![
                         Message {
