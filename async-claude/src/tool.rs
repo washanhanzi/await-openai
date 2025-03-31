@@ -31,7 +31,7 @@ macro_rules! define_tool {
     };
 }
 
-fn parse_input_schema<T: JsonSchema>() -> Result<serde_json::Value> {
+pub fn parse_input_schema<T: JsonSchema>() -> Result<serde_json::Value> {
     let settings = SchemaSettings::default().with(|s| {
         s.option_nullable = false;
         s.option_add_null_type = false;
