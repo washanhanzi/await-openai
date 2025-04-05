@@ -46,9 +46,10 @@ checksum = "dcfed56ad506cb2c684a14971b8861fdc3baaaae314b9e5f9bb532cbe3ba7a4f"
 
 [[package]]
 name = "async-claude"
-version = "0.13.0"
+version = "0.13.1"
 dependencies = [
  "anyhow",
+ "paste",
  "schemars",
  "serde",
  "serde_json",

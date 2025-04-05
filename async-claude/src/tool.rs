@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+pub use paste;
 use schemars::r#gen::SchemaSettings;
 pub use schemars::{self, JsonSchema};
 
