@@ -40,7 +40,7 @@ macro_rules! define_function_tool {
 }
 
 fn parse_function_param<T: JsonSchema>() -> Result<serde_json::Value> {
-    let settings = SchemaSettings::default().with(|s| {
+    let settings = SchemaSettings::draft2019_09().with(|s| {
         s.option_nullable = false;
         s.option_add_null_type = false;
         s.inline_subschemas = true;
@@ -72,6 +72,7 @@ mod tests {
         /// The city and state, e.g. San Francisco, CA
         pub location: String,
         pub unit: Option<UnitEnum>,
+        pub arr: Option<Vec<String>>,
     }
 
     #[derive(JsonSchema, serde::Deserialize, PartialEq, Debug)]
@@ -98,6 +99,12 @@ mod tests {
                 "unit": {
                   "type": "string",
                   "enum": ["celsius", "fahrenheit"]
+                },
+                "arr": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
                 }
               },
               "required": ["location"]

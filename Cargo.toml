@@ -14,8 +14,8 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 schemars = "0.8"
 anyhow = "1.0"
-async-claude = { path = "./async-claude", version = "0.13" }
-async-gemini = { path = "./async-gemini", version = "0.1" }
+async-claude = { path = "./async-claude" }
+async-gemini = { path = "./async-gemini" }
 paste = "1"
 tracing = "0.1"
 

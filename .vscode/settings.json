@@ -1,13 +1,5 @@
 {
-	"rust-analyzer.cargo.features": [
-		"tool",
-		"models",
-		"util",
-		"claude",
-		"gemini",
-		"price",
-		"claude-price"
-	],
+	"rust-analyzer.cargo.features": "all",
 	"rust-analyzer.linkedProjects": [
 		"await-openai/Cargo.toml",
 	],
