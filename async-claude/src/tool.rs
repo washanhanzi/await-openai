@@ -2,14 +2,19 @@ use anyhow::{anyhow, Result};
 pub use paste;
 use schemars::r#gen::SchemaSettings;
 pub use schemars::{self, JsonSchema};
+use std::borrow::Cow;
 
 use crate::messages::Tool;
 
-pub fn get_tool<T: JsonSchema>(name: &str, desc: Option<String>) -> Result<Tool> {
+pub fn get_tool<T: JsonSchema, S1, S2>(name: S1, desc: Option<S2>) -> Result<Tool>
+where
+    S1: Into<Cow<'static, str>>,
+    S2: Into<Cow<'static, str>>,
+{
     let json_value = parse_input_schema::<T>()?;
     Ok(Tool {
-        name: name.to_string(),
-        description: desc,
+        name: name.into(),
+        description: desc.map(Into::into),
         input_schema: json_value,
     })
 }
@@ -22,9 +27,9 @@ macro_rules! define_tool {
 
             pub fn [<get_ $tool_name:lower>]() -> Result<&'static $crate::messages::Tool, &'static anyhow::Error> {
                 [<$tool_name _ONCE_LOCK>].get_or_init(|| {
-                    $crate::tool::get_tool::<$param_type>(
+                    $crate::tool::get_tool::<$param_type, _, _>(
                         $function_name,
-                        Some($description.to_string()),
+                        Some($description),
                     )
                 }).as_ref()
             }

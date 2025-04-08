@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use serde::{Deserialize, Serialize};
 
 use super::{BaseContentBlock, ContentBlock, Message, MessageContent, Role};
@@ -29,8 +31,8 @@ pub struct Request {
 
 #[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
 pub struct Tool {
-    pub name: String,
-    pub description: Option<String>,
+    pub name: Cow<'static, str>,
+    pub description: Option<Cow<'static, str>>,
     pub input_schema: serde_json::Value,
 }
 
@@ -1160,9 +1162,9 @@ mod tests {
                         ),
                     }],
                     tools: Some(vec![Tool {
-                        name: "get_weather".to_string(),
+                        name: "get_weather".into(),
                         description: Some(
-                            "Get the current weather in a given location".to_string(),
+                            "Get the current weather in a given location".into(),
                         ),
                         input_schema: serde_json::json!({
                             "type": "object",
@@ -1248,9 +1250,9 @@ mod tests {
                     model: "claude-3-opus-20240229".to_string(),
                     max_tokens: 1024,
                     tools: Some(vec![Tool {
-                        name: "get_weather".to_string(),
+                        name: "get_weather".into(),
                         description: Some(
-                            "Get the current weather in a given location".to_string(),
+                            "Get the current weather in a given location".into(),
                         ),
                         input_schema: serde_json::json!({
                             "type": "object",
