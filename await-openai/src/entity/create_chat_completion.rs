@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use serde::{Deserialize, Serialize};
 
@@ -185,6 +185,36 @@ impl RequestBody {
                             })
                             .collect::<Vec<String>>()
                             .join(""),
+                    ),
+                },
+                _ => None,
+            })
+    }
+
+    pub fn last_user_message(&self) -> Option<&Message> {
+        self.messages
+            .iter()
+            .rev()
+            .find(|message| matches!(message, Message::User(_)))
+    }
+
+    pub fn last_user_message_text(&self) -> Option<String> {
+        self.messages
+            .iter()
+            .rev()
+            .find(|message| matches!(message, Message::User(_)))
+            .and_then(|message| match message {
+                Message::User(user_message) => match &user_message.content {
+                    Content::Text(text) => Some(text.clone()),
+                    Content::Array(array) => Some(
+                        array
+                            .iter()
+                            .filter_map(|content_part| match content_part {
+                                ContentPart::Text(text_part) => Some(text_part.text.clone()),
+                                _ => None,
+                            })
+                            .collect::<Vec<String>>()
+                            .join(" "),
                     ),
                 },
                 _ => None,
@@ -398,10 +428,10 @@ pub struct Tool {
 #[serde(rename_all = "lowercase")]
 pub struct FunctionTool {
     /// The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.
-    pub name: String,
+    pub name: Cow<'static, str>,
     /// A description of what the function does, used by the model to choose when and how to call the function.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
+    pub description: Option<Cow<'static, str>>,
     /// The parameters the functions accepts, described as a JSON Schema object. See the [guide](https://platform.openai.com/docs/guides/text-generation/function-calling) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for documentation about the format.
     ///
     /// Omitting `parameters` defines a function with an empty parameter list.
@@ -788,8 +818,8 @@ mod tests {
                 tools:Some(vec![Tool{
                     r#type:ToolType::Function,
                     function: FunctionTool{
-                    name:"get_current_weather".to_string(),
-                    description: Some("Get the current weather in a given location".to_string()),
+                    name:"get_current_weather".to_string().into(),
+                    description: Some("Get the current weather in a given location".to_string().into()),
                     parameters: Some(serde_json::json!({
                         "type": "object",
                         "properties": {

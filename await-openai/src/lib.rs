@@ -16,3 +16,6 @@ mod price;
 
 #[cfg(feature = "price")]
 pub use price::price;
+
+#[cfg(feature = "rmcp")]
+pub mod rmcp;

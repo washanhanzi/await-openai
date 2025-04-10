@@ -1,39 +1,45 @@
+use std::borrow::Cow;
+
 use anyhow::{Result, anyhow};
 use schemars::r#gen::SchemaSettings;
 pub use schemars::{self, JsonSchema};
 
 use crate::entity::create_chat_completion::{FunctionTool, Tool, ToolType};
+use async_claude::messages::Tool as ClaudeTool;
 pub use paste;
 
 /// get_function_tool accept function name, description and parameters type and return [Tool]
 /// use define_function_tool macro to create tool if you need a static value
-pub fn get_function_tool<T: JsonSchema>(name: &str, desc: Option<String>) -> Result<Tool> {
+pub fn get_function_tool<T: JsonSchema, S1, S2>(name: S1, desc: Option<S2>) -> Result<Tool>
+where
+    S1: Into<Cow<'static, str>>,
+    S2: Into<Cow<'static, str>>,
+{
     let json_value = parse_function_param::<T>()?;
     Ok(Tool {
         r#type: ToolType::Function,
         function: FunctionTool {
-            name: name.to_string(),
-            description: desc,
+            name: name.into(),
+            description: desc.map(Into::into),
             parameters: Some(json_value),
         },
     })
 }
 
-/// define_function_tool macro will create a fuction get_{tool_name in lowercase}, the function return a static reference to the tool
+/// define_function_tool macro will create a function get_{tool_name in lowercase}, the function return a static reference to the tool
 #[macro_export]
 macro_rules! define_function_tool {
     ($tool_name:ident, $function_name:expr, $description:expr, $param_type:ty) => {
         $crate::tool::paste::paste! {
-            static [<$tool_name _ONCE_LOCK>]: std::sync::OnceLock<$crate::entity::create_chat_completion::Tool> = ::std::sync::OnceLock::new();
+            static [<$tool_name _ONCE_LOCK>]: std::sync::OnceLock<anyhow::Result<$crate::entity::create_chat_completion::Tool>> = ::std::sync::OnceLock::new();
 
-            pub fn [<get_ $tool_name:lower>]() -> &'static $crate::entity::create_chat_completion::Tool {
+            pub fn [<get_ $tool_name:lower>]() -> Result<&'static $crate::entity::create_chat_completion::Tool, &'static anyhow::Error> {
                 [<$tool_name _ONCE_LOCK>].get_or_init(|| {
-                    $crate::tool::get_function_tool::<$param_type>(
+                    $crate::tool::get_function_tool::<$param_type, _, _>(
                         $function_name,
-                        Some($description.to_string()),
+                        Some($description),
                     )
-                    .unwrap()
-                })
+                }).as_ref()
             }
         }
     };
@@ -59,6 +65,19 @@ fn parse_function_param<T: JsonSchema>() -> Result<serde_json::Value> {
         obj.remove("definitions");
     };
     Ok(json_value)
+}
+
+impl From<ClaudeTool> for Tool {
+    fn from(claude_tool: ClaudeTool) -> Self {
+        Tool {
+            r#type: ToolType::Function,
+            function: FunctionTool {
+                name: claude_tool.name.clone(),
+                description: claude_tool.description,
+                parameters: Some(claude_tool.input_schema),
+            },
+        }
+    }
 }
 
 #[cfg(test)]
@@ -133,7 +152,7 @@ mod tests {
     #[test]
     fn test_macro() {
         define_function_tool!(MY_TOOL, "my_tool", "my tool description", MyStruct);
-        let tool = get_my_tool();
+        let tool = get_my_tool().unwrap();
         assert_eq!(
             tool.r#type,
             crate::entity::create_chat_completion::ToolType::Function
@@ -141,12 +160,12 @@ mod tests {
         assert_eq!(tool.function.name, "my_tool");
         assert_eq!(
             tool.function.description,
-            Some("my tool description".to_string())
+            Some("my tool description".to_string().into())
         );
         assert!(tool.function.parameters.is_some());
 
         define_function_tool!(MY_TOOL2, "my_tool2", "my tool description", MyStruct);
-        let tool2 = get_my_tool2();
+        let tool2 = get_my_tool2().unwrap();
         assert_eq!(
             tool2.r#type,
             crate::entity::create_chat_completion::ToolType::Function
@@ -154,7 +173,7 @@ mod tests {
         assert_eq!(tool2.function.name, "my_tool2");
         assert_eq!(
             tool2.function.description,
-            Some("my tool description".to_string())
+            Some("my tool description".to_string().into())
         );
         assert!(tool2.function.parameters.is_some());
     }

@@ -1,7 +1,7 @@
 use await_openai::{
     define_function_tool,
     entity::create_chat_completion::Tool,
-    tool::{schemars, JsonSchema},
+    tool::{JsonSchema, schemars},
 };
 
 pub fn de_function_tool_param() {
@@ -45,5 +45,5 @@ pub fn de_function_tool_param() {
         MyStruct
     );
 
-    let _tools: Vec<Tool> = vec![get_get_weather().clone()];
+    let _tools: Vec<Tool> = vec![get_get_weather().unwrap().clone()];
 }

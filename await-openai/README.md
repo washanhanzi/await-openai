@@ -4,18 +4,12 @@ ease your way to work with openai, gemini and anthropic api
 
 > [!WARNING]
 > wip, not stable.
->
-> use full version number as dependency.
->
-> breaking change may happen in minor version update until `1.0.0`.
 
 - [await-openai](https://github.com/washanhanzi/await-openai/tree/main/await-openai)
 - [async-gemini](https://github.com/washanhanzi/await-openai/tree/main/async-gemini)
 - [async-claude](https://github.com/washanhanzi/await-openai/tree/main/async-claude)
 
 # await-openai
-
-only support chat completion for now
 
 compare to [async-openai](https://github.com/64bit/async-openai)
 
@@ -32,7 +26,11 @@ blazing fast serilization compared to [openai-func-enums](https://github.com/fra
 
 transform openai's request to anthropic's request.
 
-transform authropic's response to openai's response.
+transform anthropic's response to openai's response.
+
+### rmcp
+
+bidirectional convert between openai's tool and rmcp's tool.
 
 ## benchmark
 

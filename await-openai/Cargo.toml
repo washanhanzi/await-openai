@@ -1,7 +1,7 @@
 [package]
 name = "await-openai"
 description = "utils for openai"
-version = "0.33.0"
+version = "0.34.0"
 edition = "2024"
 readme = "README.md"
 keywords = ["openai", "chatgpt"]
@@ -20,6 +20,7 @@ paste = { workspace = true, optional = true }
 async-claude = { workspace = true, optional = true }
 async-gemini = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }
+rmcp = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion = { workspace = true }
@@ -30,6 +31,7 @@ default = []
 tool = ["schemars", "anyhow", "paste"]
 claude = ["async-claude", "tracing"]
 claude-price = ["claude", "async-claude/price"]
+rmcp-tool = ["rmcp"]
 gemini = ["async-gemini"]
 price = []
 
