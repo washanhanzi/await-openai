@@ -62,6 +62,10 @@ impl ResponseBuilder {
         }
     }
 
+    pub fn build(self) -> Response {
+        self.inner
+    }
+
     pub fn push_assistant_message(mut self, message: impl Into<String>) -> Self {
         self.inner.choices.push(Choice {
             index: self.inner.choices.len(),
