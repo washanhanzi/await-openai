@@ -41,6 +41,52 @@ pub struct Response {
     pub usage: Usage,
 }
 
+#[derive(Debug, Clone)]
+pub struct ResponseBuilder {
+    inner: Response,
+}
+
+impl Default for ResponseBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ResponseBuilder {
+    pub fn new() -> Self {
+        Self {
+            inner: Response {
+                object: "chat.completion".to_string(),
+                ..Default::default()
+            },
+        }
+    }
+
+    pub fn push_assistant_message(mut self, message: impl Into<String>) -> Self {
+        self.inner.choices.push(Choice {
+            index: self.inner.choices.len(),
+            message: Message {
+                role: Role::Assistant,
+                content: Some(message.into()),
+                ..Default::default()
+            },
+            finish_reason: None,
+            logprobs: None,
+        });
+        self
+    }
+
+    pub fn id(mut self, id: impl Into<String>) -> Self {
+        self.inner.id = id.into();
+        self
+    }
+
+    pub fn model(mut self, model: impl Into<String>) -> Self {
+        self.inner.model = model.into();
+        self
+    }
+}
+
 /// Service tier used for processing the request
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
