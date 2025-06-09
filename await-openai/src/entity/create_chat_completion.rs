@@ -191,6 +191,20 @@ impl RequestBody {
             })
     }
 
+    pub fn first_system_message(&self) -> Option<&Message> {
+        self.messages
+            .iter()
+            .find(|message| matches!(message, Message::System(_)))
+    }
+
+    pub fn first_system_message_text(&self) -> Option<String> {
+        self.first_system_message()
+            .and_then(|message| match message {
+                Message::System(system_message) => Some(system_message.content.clone()),
+                _ => None,
+            })
+    }
+
     pub fn last_user_message(&self) -> Option<&Message> {
         self.messages
             .iter()
@@ -217,6 +231,21 @@ impl RequestBody {
                             .join(" "),
                     ),
                 },
+                _ => None,
+            })
+    }
+
+    pub fn last_system_message(&self) -> Option<&Message> {
+        self.messages
+            .iter()
+            .rev()
+            .find(|message| matches!(message, Message::System(_)))
+    }
+
+    pub fn last_system_message_text(&self) -> Option<String> {
+        self.last_system_message()
+            .and_then(|message| match message {
+                Message::System(system_message) => Some(system_message.content.clone()),
                 _ => None,
             })
     }
