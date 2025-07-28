@@ -8,7 +8,7 @@ impl From<RmcpTool> for Tool {
             r#type: ToolType::Function,
             function: FunctionTool {
                 name: rmcp_tool.name.clone(),
-                description: Some(rmcp_tool.description),
+                description: rmcp_tool.description,
                 parameters: Some(serde_json::to_value(&*rmcp_tool.input_schema).unwrap()),
             },
         }
@@ -19,15 +19,12 @@ impl From<Tool> for RmcpTool {
     fn from(tool: Tool) -> Self {
         RmcpTool {
             name: tool.function.name.clone(),
-            description: tool
-                .function
-                .description
-                .clone()
-                .unwrap_or(String::new().into()),
+            description: tool.function.description.clone(),
             input_schema: match tool.function.parameters {
                 Some(params) => serde_json::from_value(params).unwrap_or_default(),
                 None => Default::default(),
             },
+            annotations: None,
         }
     }
 }
@@ -43,7 +40,7 @@ mod tests {
         // Create a sample RmcpTool
         let rmcp_tool = RmcpTool {
             name: "get_weather".into(),
-            description: "Get the current weather in a location".into(),
+            description: Some("Get the current weather in a location".into()),
             input_schema: serde_json::from_value(json!({
                 "type": "object",
                 "properties": {
@@ -59,6 +56,7 @@ mod tests {
                 "required": ["location"]
             }))
             .unwrap(),
+            annotations: None,
         };
 
         // Convert to OpenAI Tool
@@ -113,7 +111,7 @@ mod tests {
         assert_eq!(rmcp_tool.name, "get_weather");
         assert_eq!(
             rmcp_tool.description,
-            "Get the current weather in a location"
+            Some("Get the current weather in a location".into())
         );
 
         let schema = &*rmcp_tool.input_schema;
@@ -145,7 +143,10 @@ mod tests {
 
         // Verify conversion
         assert_eq!(rmcp_tool.name, "simple_tool");
-        assert_eq!(rmcp_tool.description, "A tool with no parameters");
+        assert_eq!(
+            rmcp_tool.description,
+            Some("A tool with no parameters".into())
+        );
 
         // The input_schema should be empty but valid
         assert!(rmcp_tool.input_schema.is_empty());

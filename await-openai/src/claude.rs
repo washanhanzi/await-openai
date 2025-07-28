@@ -69,6 +69,16 @@ impl From<OpenaiRequestBody> for Request {
                                     }
                                     tracing::warn!("Image URL is not supported in Claude yet");
                                 }
+                                #[cfg(feature = "custom_content_part")]
+                                ContentPart::Document(_) => {
+                                    // Claude doesn't support document content parts yet,
+                                    // so we skip them for now
+                                }
+                                #[cfg(feature = "custom_content_part")]
+                                ContentPart::Audio(_) => {
+                                    // Claude doesn't support audio content parts yet,
+                                    // so we skip them for now
+                                }
                             }
                         }
                         messages.push(Message {

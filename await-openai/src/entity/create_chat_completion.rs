@@ -544,6 +544,12 @@ pub enum ContentPart {
     Text(TextContentPart),
     #[serde(rename = "image_url")]
     Image(ImageContentPart),
+    #[cfg(feature = "custom_content_part")]
+    #[serde(rename = "document")]
+    Document(DocumentContentPart),
+    #[cfg(feature = "custom_content_part")]
+    #[serde(rename = "audio")]
+    Audio(AudioContentPart),
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
@@ -574,6 +580,24 @@ pub struct ImageContentPart {
     /// The witdth and height of the image in pixels. the field is used for tokens calculation, it won't serilized, or deserialized when it's None.
     #[serde(skip_serializing)]
     pub dimensions: Option<(u32, u32)>,
+}
+
+#[cfg(feature = "custom_content_part")]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
+pub struct DocumentContentPart {
+    pub document_url: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mime_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+}
+
+#[cfg(feature = "custom_content_part")]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
+pub struct AudioContentPart {
+    pub url: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
@@ -961,5 +985,100 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(request_body_no_user.first_user_message_text(), None);
+    }
+
+    #[cfg(feature = "custom_content_part")]
+    #[test]
+    fn test_document_content_part() {
+        // Test serialization and deserialization of Document variant
+        let content_part = ContentPart::Document(DocumentContentPart {
+            document_url: "https://example.com/document.pdf".to_string(),
+            mime_type: Some("application/pdf".to_string()),
+            name: Some("test_document.pdf".to_string()),
+        });
+
+        // Test serialization
+        let json = serde_json::to_string(&content_part).unwrap();
+        assert!(json.contains("\"type\":\"document\""));
+        assert!(json.contains("\"document_url\":\"https://example.com/document.pdf\""));
+        assert!(json.contains("\"mime_type\":\"application/pdf\""));
+        assert!(json.contains("\"name\":\"test_document.pdf\""));
+
+        // Test deserialization
+        let deserialized: ContentPart = serde_json::from_str(&json).unwrap();
+        assert_eq!(content_part, deserialized);
+
+        // Test with array content including document
+        let request_body = RequestBody {
+            model: "gpt-4".to_string(),
+            messages: vec![
+                Message::User(UserMessage {
+                    content: Content::Array(vec![
+                        ContentPart::Text(TextContentPart {
+                            text: "Please analyze this document:".to_string(),
+                        }),
+                        ContentPart::Document(DocumentContentPart {
+                            document_url: "https://example.com/report.pdf".to_string(),
+                            mime_type: Some("application/pdf".to_string()),
+                            name: Some("report.pdf".to_string()),
+                        }),
+                    ]),
+                    name: None,
+                }),
+            ],
+            ..Default::default()
+        };
+
+        // Test that document parts are ignored when getting text
+        assert_eq!(
+            request_body.first_user_message_text(),
+            Some("Please analyze this document:".to_string())
+        );
+    }
+
+    #[cfg(feature = "custom_content_part")]
+    #[test]
+    fn test_audio_content_part() {
+        // Test serialization and deserialization of Audio variant
+        let content_part = ContentPart::Audio(AudioContentPart {
+            url: "https://example.com/audio.mp3".to_string(),
+            name: Some("test_audio.mp3".to_string()),
+        });
+
+        // Test serialization
+        let json = serde_json::to_string(&content_part).unwrap();
+        assert!(json.contains("\"type\":\"audio\""));
+        assert!(json.contains("\"url\":\"https://example.com/audio.mp3\""));
+        assert!(json.contains("\"name\":\"test_audio.mp3\""));
+
+        // Test deserialization
+        let deserialized: ContentPart = serde_json::from_str(&json).unwrap();
+        assert_eq!(content_part, deserialized);
+
+        // Test with array content including audio
+        let request_body = RequestBody {
+            model: "gpt-4".to_string(),
+            messages: vec![
+                Message::User(UserMessage {
+                    content: Content::Array(vec![
+                        ContentPart::Text(TextContentPart {
+                            text: "Please transcribe this audio:".to_string(),
+                        }),
+                        ContentPart::Audio(AudioContentPart {
+                            url: "https://example.com/speech.mp3".to_string(),
+                            name: Some("speech.mp3".to_string()),
+                        }),
+                    ]),
+                    name: None,
+                }),
+            ],
+            ..Default::default()
+        };
+
+        // Test that audio parts are ignored when getting text
+        assert_eq!(
+            request_body.first_user_message_text(),
+            Some("Please transcribe this audio:".to_string())
+        );
     }
 }
