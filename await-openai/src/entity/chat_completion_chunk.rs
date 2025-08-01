@@ -171,37 +171,32 @@ impl EventDataParser<Chunk> for OpenaiEventDataParser {
 
                     if let Some(reason) = choice.finish_reason {
                         self.finish_reason = Some(reason);
-                        return Ok(self.parse_tool_call_chunk(None));
                     }
 
                     //simple content
                     if let Some(c) = choice.delta.content.as_ref() {
                         self.content.push_str(c);
-                        return Ok(None);
                     }
                     if let Some(c) = choice.delta.reasoning.as_ref() {
                         self.think_content.push_str(c);
-                        return Ok(None);
                     }
 
                     if let Some(refusal) = choice.delta.refusal.as_ref() {
                         self.refusal = Some(refusal.clone());
-                        return Ok(None);
                     }
 
                     if let Some(annotations) = choice.delta.annotations.as_ref() {
                         self.annotations = Some(annotations.clone());
-                        return Ok(None);
                     }
 
                     if let Some(audio) = choice.delta.audio.as_ref() {
                         self.audio = Some(audio.clone());
-                        return Ok(None);
                     }
 
                     if let Some(tool_calls) = choice.delta.tool_calls.as_ref() {
                         return Ok(self.parse_tool_call_chunk(tool_calls.first()));
                     }
+                    return Ok(self.parse_tool_call_chunk(None));
                 }
                 Ok(None)
             }
@@ -668,6 +663,70 @@ mod tests {
                 usage: Usage::default(),
             }
         )
+    }
+
+    #[test]
+    //openrouter gemini response
+    fn test_last_chunk_with_content_and_finish_reason() {
+        let test_cases = vec![
+            (
+                "start",
+                r#"{"id":"chatcmpl-123","object":"chat.completion.chunk","created":1694268190,"model":"gpt-3.5-turbo-0613", "system_fingerprint": "fp_44709d6fcb", "choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}]}"#,
+                None,
+            ),
+            (
+                "data",
+                r#"{"id":"chatcmpl-123","object":"chat.completion.chunk","created":1694268190,"model":"gpt-3.5-turbo-0613", "system_fingerprint": "fp_44709d6fcb", "choices":[{"index":0,"delta":{"content":"Hello"},"logprobs":null,"finish_reason":null}]}"#,
+                None,
+            ),
+            (
+                "last_chunk_with_content_and_finish",
+                r#"{"id":"chatcmpl-123","object":"chat.completion.chunk","created":1694268190,"model":"gpt-3.5-turbo-0613", "system_fingerprint": "fp_44709d6fcb", "choices":[{"index":0,"delta":{"content":" world!"},"logprobs":null,"finish_reason":"stop"}]}"#,
+                None,
+            ),
+            ("Done", "[DONE]", None),
+        ];
+
+        let mut parser = OpenaiEventDataParser::default();
+        for (name, data, want) in test_cases {
+            let got = parser
+                .parse_str(data)
+                .map_err(|e| {
+                    panic!("test_parser failed: {} with err: {}", name, e);
+                })
+                .unwrap();
+            assert_eq!(got, want, "test_parser failed: {}", name);
+        }
+
+        let res = parser.response();
+        assert_eq!(
+            res,
+            ChatCompletionResponse {
+                id: "chatcmpl-123".to_string(),
+                object: "chat.completion.chunk".to_string(),
+                created: 1694268190,
+                model: "gpt-3.5-turbo-0613".to_string(),
+                system_fingerprint: Some("fp_44709d6fcb".to_string()),
+                service_tier: None,
+                choices: vec![
+                    ChatCompletionChoice {
+                        index: 0,
+                        message: Message {
+                            role: Role::Assistant,
+                            content: Some("Hello world!".to_string()),
+                            tool_calls: None,
+                            refusal: None,
+                            annotations: None,
+                            audio: None,
+                            reasoning: None,
+                        },
+                        finish_reason: Some(FinishReason::Stop),
+                        logprobs: None,
+                    },
+                ],
+                usage: Usage::default(),
+            }
+        );
     }
 
     #[test]

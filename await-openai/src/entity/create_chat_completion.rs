@@ -585,7 +585,7 @@ pub struct ImageContentPart {
 #[cfg(feature = "custom_content_part")]
 #[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
 pub struct DocumentContentPart {
-    pub document_url: String,
+    pub url: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mime_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -992,7 +992,7 @@ mod tests {
     fn test_document_content_part() {
         // Test serialization and deserialization of Document variant
         let content_part = ContentPart::Document(DocumentContentPart {
-            document_url: "https://example.com/document.pdf".to_string(),
+            url: "https://example.com/document.pdf".to_string(),
             mime_type: Some("application/pdf".to_string()),
             name: Some("test_document.pdf".to_string()),
         });
@@ -1018,7 +1018,7 @@ mod tests {
                             text: "Please analyze this document:".to_string(),
                         }),
                         ContentPart::Document(DocumentContentPart {
-                            document_url: "https://example.com/report.pdf".to_string(),
+                            url: "https://example.com/report.pdf".to_string(),
                             mime_type: Some("application/pdf".to_string()),
                             name: Some("report.pdf".to_string()),
                         }),
